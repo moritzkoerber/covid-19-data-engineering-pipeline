@@ -1,0 +1,91 @@
+---
+name: Manual Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      docker_version_tag:
+        description: 'For example "v2"'
+        required: false
+      stack_version:
+        description: 'For example "v2"'
+        required: false
+      environment:
+        type: choice
+        options:
+          - staging
+          - production
+        description: Deploy environment; staging or production
+        required: false
+
+concurrency: ${{ github.event.inputs.environment }}
+
+env:
+  PYTHON_VERSION: 3.8.2
+  PIPENV_VENV_IN_PROJECT: '1'
+
+jobs:
+  build_and_push_docker_containers:
+    name: Build and push docker containers
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+    strategy:
+      matrix:
+        lambda_name: ['api_lambda', 'ge_lambda']
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Get AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GithubOIDCRole
+          aws-region: eu-central-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        if: contains(github.event.inputs.docker_version_tag, 'v')
+        with:
+          context: ops/container/${{ matrix.lambda_name }}
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ matrix.lambda_name }}-${{ github.event.inputs.environment }}:${{ github.event.inputs.docker_version_tag }}
+
+  deploy_stack:
+    name: Deploy stack
+    runs-on: ubuntu-latest
+    needs: build_and_push_docker_containers
+    permissions:
+      id-token: write
+      contents: write
+    strategy:
+      matrix:
+        include:
+          - stack-name: data-engineering-stack
+            stack-file: ops/stack/pipeline_stack.yaml
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Get AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GithubOIDCRole
+          aws-region: eu-central-1
+
+      - name: Deploy stacks
+        if: contains(github.event.inputs.stack_version, 'v')
+        uses: aws-actions/aws-cloudformation-github-deploy@v1
+        with:
+          name: ${{ matrix.stack-name }}-${{ github.event.inputs.environment }}
+          template: ${{ matrix.stack-file }}
+          no-fail-on-empty-changeset: '1'
+          capabilities: CAPABILITY_NAMED_IAM
+          parameter-overrides: >-
+            Environment=${{ github.event.inputs.environment }},
+            Version=${{ github.event.inputs.stack_version }}

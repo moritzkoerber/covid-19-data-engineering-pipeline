@@ -1,0 +1,31 @@
+---
+name: Create release
+
+on:
+  workflow_dispatch: {}
+
+env:
+  PYTHON_VERSION: 3.8.2
+  PIPENV_VENV_IN_PROJECT: '1'
+
+jobs:
+  linting:
+    name: Lint files
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Get AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GithubOIDCRole
+          aws-region: eu-central-1

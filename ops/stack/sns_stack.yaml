@@ -1,0 +1,60 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: General SNS Stack
+
+Resources:
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: PipelineAlarm
+      TopicName: PipelineAlarm
+
+  SNSSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: '{{resolve:secretsmanager:CloudWatchAlarmEmail:SecretString:email}}'
+      Protocol: email
+      TopicArn: !Ref SNSTopic
+      DeliveryPolicy:
+        healthyRetryPolicy:
+          minDelayTarget: 20
+          maxDelayTarget: 20
+          numRetries: 3
+          numMaxDelayRetries: 0
+          numNoDelayRetries: 0
+          numMinDelayRetries: 0
+          backoffFunction: linear
+
+  SNSExecutionPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref SNSTopic
+      PolicyDocument:
+        Version: '2012-10-17'
+        Id: Default policy
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: '*'
+            Action:
+              - sns:GetTopicAttributes
+              - sns:SetTopicAttributes
+              - sns:AddPermission
+              - sns:RemovePermission
+              - sns:DeleteTopic
+              - sns:Subscribe
+              - sns:ListSubscriptionsByTopic
+              - sns:Publish
+              - sns:Receive
+            Resource: !Ref SNSTopic
+            Condition:
+              StringEquals:
+                AWS:SourceOwner: !Sub '${AWS::AccountId}'
+
+Outputs:
+  SNSTopic:
+    Description: SNS Topics for CloudWatch alarms
+    Value: !Ref SNSTopic
+    Export:
+      Name: CloudWatchAlarmSNSTopic
