@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Data Engineering Project Stack
+Description: Data Engineering Pipeline Stack
 
 Resources:
   S3Bucket:
@@ -15,10 +15,9 @@ Resources:
       DBName: dev
       NodeType: dc2.large
       IamRoles:
-        - RedshiftClusterRole
+        - !GetAtt RedshiftClusterRole.Arn
       MasterUsername: appadmin
-      MasterUserPassword: "{{resolve:ssm-secure:E04nc7eBv3id:1}}"
-
+      MasterUserPassword: '{{resolve:secretsmanager:data-pipeline-redshift-cluster:SecretString:appadmin}}'
 
   RedshiftClusterRole:
     Type: AWS::IAM::Role
@@ -30,3 +29,14 @@ Resources:
               Service: redshift.amazonaws.com
             Action: sts:AssumeRole
       Path: /
+      Policies:
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:Get*
+                Resource:
+                  - !Sub '${S3Bucket.Arn}'
+                  - !Sub '${S3Bucket.Arn}/*'
