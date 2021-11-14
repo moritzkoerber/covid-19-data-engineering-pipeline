@@ -1,0 +1,32 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Data Engineering Project Stack
+
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: data-pipeline-s3-bucket
+
+  RedshiftCluster:
+    Type: AWS::Redshift::Cluster
+    Properties:
+      ClusterIdentifier: data-pipeline-redshift-cluster
+      ClusterType: single-node
+      DBName: dev
+      NodeType: dc2.large
+      IamRoles:
+        - RedshiftClusterRole
+      MasterUsername: appadmin
+      MasterUserPassword: "{{resolve:ssm-secure:E04nc7eBv3id:1}}"
+
+
+  RedshiftClusterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: redshift.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
