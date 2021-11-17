@@ -40,3 +40,28 @@ Resources:
                 Resource:
                   - !Sub '${S3Bucket.Arn}'
                   - !Sub '${S3Bucket.Arn}/*'
+  APILambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ImageUri: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/api_lambda_v1'
+      ImageConfig:
+        Command:
+          - handler.handler_func
+      Description: Lambda for covid api calls
+      Timeout: 300
+      PackageType: Image
+      Role: !GetAtt APILambdaRole.Arn
+
+  APILambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
