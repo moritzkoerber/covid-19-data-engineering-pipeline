@@ -52,6 +52,10 @@ Resources:
       Timeout: 300
       PackageType: Image
       Role: !GetAtt APILambdaRole.Arn
+      Environment:
+        Variables:
+          API_URL: 'https://api.corona-zahlen.org/germany'
+          BUCKET_URL: !Sub '${S3Bucket}/data/'
 
   APILambdaRole:
     Type: AWS::IAM::Role
@@ -74,6 +78,11 @@ Resources:
                   - ecr:GetDownloadUrlForLayer
                 Resource:
                   - !Sub 'arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/api_lambda'
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource:
+                  - !Sub '${S3Bucket.Arn}/vaccinations/'
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
