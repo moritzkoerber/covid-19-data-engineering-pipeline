@@ -55,7 +55,7 @@ Resources:
       Environment:
         Variables:
           API_URL: 'https://api.corona-zahlen.org/germany'
-          BUCKET_URL: !Sub '${S3Bucket}/data/'
+          BUCKET: !Sub 's3://${S3Bucket}/data'
 
   APILambdaRole:
     Type: AWS::IAM::Role

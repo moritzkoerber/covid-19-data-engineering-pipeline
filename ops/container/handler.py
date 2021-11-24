@@ -4,7 +4,7 @@ import pandas
 import requests
 
 _API_URL = os.environ["API_URL"]
-_BUCKET = os.environ["BUCKET_URL"]
+_BUCKET = os.environ["BUCKET"]
 
 
 def handler(event, context):
@@ -13,6 +13,6 @@ def handler(event, context):
     df = pandas.json_normalize(response.json())
 
     df.to_csv(
-        _BUCKET,
+        f"{_BUCKET}/vaccinations/{pandas.Timestamp.today():%Y-%m-%d}.csv",
         index=False,
     )
