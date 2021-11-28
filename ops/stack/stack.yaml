@@ -47,7 +47,7 @@ Resources:
         ImageUri: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/api_lambda:latest'
       ImageConfig:
         Command:
-          - handler.handler_func
+          - handler.handler
       Description: Lambda for covid api calls
       Timeout: 300
       PackageType: Image
@@ -80,9 +80,10 @@ Resources:
                   - !Sub 'arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/api_lambda'
               - Effect: Allow
                 Action:
-                  - s3:PutObject
+                  - s3:*
                 Resource:
-                  - !Sub '${S3Bucket.Arn}/vaccinations/'
+                  - !Sub '${S3Bucket.Arn}'
+                  - !Sub '${S3Bucket.Arn}/*'
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
