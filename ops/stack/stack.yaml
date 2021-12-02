@@ -9,6 +9,16 @@ Parameters:
       - production
     Default: staging
 
+Mappings:
+  Environments:
+    staging:
+      DailyAPILambdaSchedule: cron(0/10 * ? * * *)
+    production:
+      DailyAPILambdaSchedule: cron(* 9 ? * * *)
+
+Conditions:
+  IsProduction: !Equals [ !Ref Environment, production ]
+
 Resources:
   S3Bucket:
     Type: AWS::S3::Bucket
@@ -110,3 +120,24 @@ Resources:
       Statistic: Sum
       Period: 300
       EvaluationPeriods: 1
+
+  LambdaDailyTrigger:
+    Type: AWS::Events::Rule
+    Condition: IsProduction
+    Properties:
+      Description: Trigger APILambda function
+      Name: !Sub 'api-lambda-trigger-${Environment}'
+      ScheduleExpression: !FindInMap [Environments, !Ref Environment, DailyAPILambdaSchedule]
+      Targets:
+        - Arn: !GetAtt APILambda.Arn
+          Id: !Sub 'APILambda-${Environment}'
+
+  LambdaDailyTriggerPermission:
+    Type: AWS::Lambda::Permission
+    Condition: IsProduction
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt APILambda.Arn
+      Principal: events.amazonaws.com
+      SourceAccount: !Ref 'AWS::AccountId'
+      SourceArn: !GetAtt LambdaDailyTrigger.Arn
