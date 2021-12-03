@@ -20,10 +20,20 @@ Conditions:
   IsProduction: !Equals [ !Ref Environment, production ]
 
 Resources:
-  S3Bucket:
+  APIS3Bucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub 'data-pipeline-s3-bucket-${Environment}'
+
+
+  APIGlueDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      DatabaseInput:
+        Description: !Sub '${Environment} Database for API data'
+        LocationUri: !Sub 's3://${APIS3Bucket}/'
+        Name: !Sub 'api_data_${Environment}'
+      CatalogId: !Ref AWS::AccountId
 
   RedshiftCluster:
     Type: AWS::Redshift::Cluster
@@ -56,8 +66,8 @@ Resources:
                 Action:
                   - s3:Get*
                 Resource:
-                  - !Sub '${S3Bucket.Arn}'
-                  - !Sub '${S3Bucket.Arn}/*'
+                  - !Sub '${APIS3Bucket.Arn}'
+                  - !Sub '${APIS3Bucket.Arn}/*'
   APILambda:
     Type: AWS::Lambda::Function
     Properties:
@@ -73,7 +83,7 @@ Resources:
       Environment:
         Variables:
           API_URL: 'https://api.corona-zahlen.org/germany'
-          BUCKET: !Sub 's3://${S3Bucket}/data'
+          BUCKET: !Sub 's3://${APIS3Bucket}/data'
 
   APILambdaRole:
     Type: AWS::IAM::Role
@@ -100,8 +110,8 @@ Resources:
                 Action:
                   - s3:*
                 Resource:
-                  - !Sub '${S3Bucket.Arn}'
-                  - !Sub '${S3Bucket.Arn}/*'
+                  - !Sub '${APIS3Bucket.Arn}'
+                  - !Sub '${APIS3Bucket.Arn}/*'
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
