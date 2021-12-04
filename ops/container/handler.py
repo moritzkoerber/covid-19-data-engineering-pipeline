@@ -12,7 +12,7 @@ def handler(event, context):
     response = requests.get(_API_URL)
     df = pandas.json_normalize(response.json())
 
-    df.to_csv(
-        f"{_BUCKET}/vaccinations/{pandas.Timestamp.today():%Y-%m-%d}.csv",
+    df.to_parquet(
+        f"{_BUCKET}/vaccinations/{pandas.Timestamp.today():%Y-%m-%d}.parquet",
         index=False,
     )
