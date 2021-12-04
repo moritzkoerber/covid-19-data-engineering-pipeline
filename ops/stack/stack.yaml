@@ -12,9 +12,11 @@ Parameters:
 Mappings:
   Environments:
     staging:
-      DailyAPILambdaSchedule: cron(0/10 * ? * * *)
+      DailyAPILambdaSchedule: cron(0 17 ? * * *)
+      DailyGlueCrawlerSchedule: cron(0 17 ? * * *)
     production:
-      DailyAPILambdaSchedule: cron(* 9 ? * * *)
+      DailyAPILambdaSchedule: cron(0 15 ? * * *)
+      DailyGlueCrawlerSchedule: cron(10 15 ? * * *)
 
 Conditions:
   IsProduction: !Equals [ !Ref Environment, production ]
@@ -24,7 +26,11 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub 'data-pipeline-s3-bucket-${Environment}'
-
+      Tags:
+        - Key: Name
+          Value: !Ref AWS::StackName
+        - Key: Environment
+          Value: !Ref Environment
 
   APIGlueDatabase:
     Type: AWS::Glue::Database
@@ -34,6 +40,52 @@ Resources:
         LocationUri: !Sub 's3://${APIS3Bucket}/'
         Name: !Sub 'api_data_${Environment}'
       CatalogId: !Ref AWS::AccountId
+
+  APICrawler:
+    Type: AWS::Glue::Crawler
+    Properties:
+      DatabaseName: !Ref APIGlueDatabase
+      Description: Glue Crawler for API data
+      Name: !Sub 'api-data-glue-crawler-${Environment}'
+      Role: !Ref APICrawlerRole
+      Schedule:
+        ScheduleExpression: !FindInMap [Environments, !Ref Environment, DailyGlueCrawlerSchedule]
+      SchemaChangePolicy:
+        UpdateBehavior: UPDATE_IN_DATABASE
+        DeleteBehavior: DELETE_FROM_DATABASE
+      Targets:
+        S3Targets:
+          - Path: !Sub 's3://${APIS3Bucket}/data/vaccinations'
+      Configuration: "{\"Version\":1.0,\"CrawlerOutput\":{\"Partitions\":{\"AddOrUpdateBehavior\":\"InheritFromTable\"}}}"
+      Tags:
+        Stack: !Ref AWS::StackName
+        Environment: !Ref Environment
+
+  APICrawlerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: glue.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:Delete*
+                  - s3:Get*
+                  - s3:Put*
+                Resource:
+                  - !Sub '${APIS3Bucket.Arn}'
+                  - !Sub '${APIS3Bucket.Arn}/*'
 
   RedshiftCluster:
     Type: AWS::Redshift::Cluster
@@ -60,7 +112,7 @@ Resources:
       Policies:
         - PolicyName: S3Access
           PolicyDocument:
-            Version: 2012-10-17
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
@@ -84,6 +136,11 @@ Resources:
         Variables:
           API_URL: 'https://api.corona-zahlen.org/germany'
           BUCKET: !Sub 's3://${APIS3Bucket}/data'
+      Tags:
+        - Key: Name
+          Value: !Ref AWS::StackName
+        - Key: Environment
+          Value: !Ref Environment
 
   APILambdaRole:
     Type: AWS::IAM::Role
@@ -98,7 +155,7 @@ Resources:
       Policies:
         - PolicyName: ECRAccess
           PolicyDocument:
-            Version: 2012-10-17
+            Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
