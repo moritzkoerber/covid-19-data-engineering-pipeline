@@ -175,7 +175,7 @@ Resources:
   APILambdaAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmDescription: !Sub 'Alarm if an error occurs in ${APILambda}'
+      AlarmDescription: !Sub 'Alarm if an error occurs in APILambda (${Environment})'
       Namespace: 'AWS/Lambda'
       MetricName: Errors
       Dimensions:
@@ -187,6 +187,10 @@ Resources:
       Statistic: Sum
       Period: 300
       EvaluationPeriods: 1
+      AlarmActions:
+        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${SNSTopic.TopicName}'
+      OKActions:
+        - !Sub "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${SNSTopic.TopicName}"
 
   LambdaDailyTrigger:
     Type: AWS::Events::Rule
@@ -208,3 +212,53 @@ Resources:
       Principal: events.amazonaws.com
       SourceAccount: !Ref 'AWS::AccountId'
       SourceArn: !GetAtt LambdaDailyTrigger.Arn
+
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: 'PipelineAlarm'
+      TopicName: 'PipelineAlarm'
+
+  SNSSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Endpoint: 'koerber.moritz@gmail.com'
+      Protocol: email
+      TopicArn: !Ref SNSTopic
+      DeliveryPolicy:
+        healthyRetryPolicy:
+          minDelayTarget: 20
+          maxDelayTarget: 20
+          numRetries: 3
+          numMaxDelayRetries: 0
+          numNoDelayRetries: 0
+          numMinDelayRetries: 0
+          backoffFunction: linear
+
+  SNSExecutionPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref SNSTopic
+      PolicyDocument:
+            Version: '2012-10-17'
+            Id: Default policy
+            Statement:
+              - Sid: Access
+                Effect: Allow
+                Principal:
+                  AWS: "*"
+                Action:
+                  - sns:GetTopicAttributes
+                  - sns:SetTopicAttributes
+                  - sns:AddPermission
+                  - sns:RemovePermission
+                  - sns:DeleteTopic
+                  - sns:Subscribe
+                  - sns:ListSubscriptionsByTopic
+                  - sns:Publish
+                  - sns:Receive
+                Resource: !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${SNSTopic.TopicName}'
+                Condition:
+                  StringEquals:
+                    AWS:SourceOwner: !Sub '${AWS::AccountId}'
