@@ -12,11 +12,11 @@ Parameters:
 Mappings:
   Environments:
     staging:
-      DailyAPILambdaSchedule: cron(0 17 ? * * *)
-      DailyGlueCrawlerSchedule: cron(0 17 ? * * *)
+      DailyAPILambdaSchedule: cron(0 7 ? * * *)
+      DailyGlueCrawlerSchedule: cron(30 7 ? * * *)
     production:
-      DailyAPILambdaSchedule: cron(0 15 ? * * *)
-      DailyGlueCrawlerSchedule: cron(10 15 ? * * *)
+      DailyAPILambdaSchedule: cron(0 8 ? * * *)
+      DailyGlueCrawlerSchedule: cron(30 8 ? * * *)
 
 Conditions:
   IsProduction: !Equals [ !Ref Environment, production ]
@@ -24,8 +24,15 @@ Conditions:
 Resources:
   APIS3Bucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       BucketName: !Sub 'data-pipeline-s3-bucket-${Environment}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
       Tags:
         - Key: Name
           Value: !Ref AWS::StackName
@@ -41,7 +48,7 @@ Resources:
         Name: !Sub 'api_data_${Environment}'
       CatalogId: !Ref AWS::AccountId
 
-  APICrawler:
+  APIDataCrawler:
     Type: AWS::Glue::Crawler
     Properties:
       DatabaseName: !Ref APIGlueDatabase
@@ -108,18 +115,35 @@ Resources:
             Principal:
               Service: redshift.amazonaws.com
             Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
       Path: /
       Policies:
+        - PolicyName: GlueCatalogAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - glue:*
+                  - glue:CreateDatabase
+                  - glue:GetTable
+                  - glue:GetDatabase
+                Resource:
+                  - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/*'
+                  - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:calatog/*'
+                  - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:calatog'
         - PolicyName: S3Access
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
-                  - s3:Get*
+                  - s3:*
                 Resource:
                   - !Sub '${APIS3Bucket.Arn}'
                   - !Sub '${APIS3Bucket.Arn}/*'
+
   APILambda:
     Type: AWS::Lambda::Function
     Properties:
@@ -188,9 +212,9 @@ Resources:
       Period: 300
       EvaluationPeriods: 1
       AlarmActions:
-        - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${SNSTopic.TopicName}'
+        - !ImportValue CloudWatchAlarmSNSTopic
       OKActions:
-        - !Sub "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${SNSTopic.TopicName}"
+        - !ImportValue CloudWatchAlarmSNSTopic
 
   LambdaDailyTrigger:
     Type: AWS::Events::Rule
@@ -212,53 +236,3 @@ Resources:
       Principal: events.amazonaws.com
       SourceAccount: !Ref 'AWS::AccountId'
       SourceArn: !GetAtt LambdaDailyTrigger.Arn
-
-  SNSTopic:
-    Type: AWS::SNS::Topic
-    Properties:
-      DisplayName: 'PipelineAlarm'
-      TopicName: 'PipelineAlarm'
-
-  SNSSubscription:
-    Type: AWS::SNS::Subscription
-    Properties:
-      Endpoint: 'koerber.moritz@gmail.com'
-      Protocol: email
-      TopicArn: !Ref SNSTopic
-      DeliveryPolicy:
-        healthyRetryPolicy:
-          minDelayTarget: 20
-          maxDelayTarget: 20
-          numRetries: 3
-          numMaxDelayRetries: 0
-          numNoDelayRetries: 0
-          numMinDelayRetries: 0
-          backoffFunction: linear
-
-  SNSExecutionPolicy:
-    Type: AWS::SNS::TopicPolicy
-    Properties:
-      Topics:
-        - !Ref SNSTopic
-      PolicyDocument:
-            Version: '2012-10-17'
-            Id: Default policy
-            Statement:
-              - Sid: Access
-                Effect: Allow
-                Principal:
-                  AWS: "*"
-                Action:
-                  - sns:GetTopicAttributes
-                  - sns:SetTopicAttributes
-                  - sns:AddPermission
-                  - sns:RemovePermission
-                  - sns:DeleteTopic
-                  - sns:Subscribe
-                  - sns:ListSubscriptionsByTopic
-                  - sns:Publish
-                  - sns:Receive
-                Resource: !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${SNSTopic.TopicName}'
-                Condition:
-                  StringEquals:
-                    AWS:SourceOwner: !Sub '${AWS::AccountId}'
