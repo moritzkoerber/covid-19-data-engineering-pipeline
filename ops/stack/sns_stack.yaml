@@ -11,7 +11,7 @@ Resources:
   SNSSubscription:
     Type: AWS::SNS::Subscription
     Properties:
-      Endpoint: 'koerber.moritz@gmail.com'
+      Endpoint: '{{resolve:secretsmanager:CloudWatchAlarmEmail:SecretString:email}}'
       Protocol: email
       TopicArn: !Ref SNSTopic
       DeliveryPolicy:
