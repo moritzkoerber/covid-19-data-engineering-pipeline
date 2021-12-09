@@ -47,7 +47,7 @@ Resources:
                   - sns:ListSubscriptionsByTopic
                   - sns:Publish
                   - sns:Receive
-                Resource: !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${SNSTopic.TopicName}'
+                Resource: !Ref SNSTopic
                 Condition:
                   StringEquals:
                     AWS:SourceOwner: !Sub '${AWS::AccountId}'
@@ -55,6 +55,6 @@ Resources:
 Outputs:
   SNSTopic:
     Description: SNS Topics for CloudWatch alarms
-    Value: !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${SNSTopic.TopicName}'
+    Value: !Ref SNSTopic
     Export:
       Name: 'CloudWatchAlarmSNSTopic'
