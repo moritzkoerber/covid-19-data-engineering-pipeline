@@ -8,6 +8,8 @@ Parameters:
       - staging
       - production
     Default: staging
+  Version:
+    Type: String
 
 Mappings:
   Environments:
@@ -148,7 +150,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Code:
-        ImageUri: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/api_lambda:latest'
+        ImageUri: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/api_lambda:${Version}'
       ImageConfig:
         Command:
           - handler.handler
@@ -165,6 +167,16 @@ Resources:
           Value: !Ref AWS::StackName
         - Key: Environment
           Value: !Ref Environment
+
+  APILambdaRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      EncryptionConfiguration:
+        EncryptionType: AES256
+      ImageTagMutability: MUTABLE
+      ImageScanningConfiguration:
+        ScanOnPush: True
+      RepositoryName: api_lambda
 
   APILambdaAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -190,7 +202,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Code:
-        ImageUri: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ge_lambda:latest'
+        ImageUri: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ge_lambda:${Version}'
       ImageConfig:
         Command:
           - handler.handler
@@ -229,6 +241,16 @@ Resources:
         - !ImportValue CloudWatchAlarmSNSTopic
       OKActions:
         - !ImportValue CloudWatchAlarmSNSTopic
+
+  GELambdaRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      EncryptionConfiguration:
+        EncryptionType: AES256
+      ImageTagMutability: MUTABLE
+      ImageScanningConfiguration:
+        ScanOnPush: True
+      RepositoryName: ge_lambda
 
   LambdaRole:
     Type: AWS::IAM::Role
