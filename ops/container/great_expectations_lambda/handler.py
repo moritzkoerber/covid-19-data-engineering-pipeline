@@ -66,7 +66,7 @@ def handler(event, context):
                 "prefix": f"{_S3_FOLDER}/raw",
                 "default_regex": {
                     "group_names": ["data_asset_name"],
-                    "pattern": r"(\d{4}-\d{2}-\d{2})\.parquet",
+                    "pattern": fr"{_S3_FOLDER}/raw/(\d{{4}}-\d{{2}}-\d{{2}})\.parquet",
                 },
             },
         },
@@ -83,7 +83,7 @@ def handler(event, context):
             {
                 "batch_request": {
                     "datasource_name": f"{_DATASOURCE}",
-                    "data_connector_name": "file_system_data_connector",
+                    "data_connector_name": "s3_data_connector",
                     "data_asset_name": _date_today,
                     "data_connector_query": {"index": -1},
                 },
@@ -95,6 +95,8 @@ def handler(event, context):
     context.add_checkpoint(**checkpoint_dict)
 
     results = context.run_checkpoint(checkpoint_name=_CHECKPOINT)
+
+    print(results)
 
     if results["success"]:
         s3_client = boto3.client("s3")

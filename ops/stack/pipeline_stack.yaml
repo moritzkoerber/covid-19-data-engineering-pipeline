@@ -15,10 +15,12 @@ Mappings:
   Environments:
     staging:
       DailyAPILambdaSchedule: cron(0 7 ? * * *)
-      DailyGlueCrawlerSchedule: cron(30 7 ? * * *)
+      DailyGELambdaSchedule: cron(30 7 ? * * *)
+      DailyGlueCrawlerSchedule: cron(45 7 ? * * *)
     production:
       DailyAPILambdaSchedule: cron(0 8 ? * * *)
-      DailyGlueCrawlerSchedule: cron(30 8 ? * * *)
+      DailyGELambdaSchedule: cron(30 8 ? * * *)
+      DailyGlueCrawlerSchedule: cron(45 8 ? * * *)
 
 Conditions:
   IsProduction: !Equals [ !Ref Environment, production ]
@@ -64,7 +66,7 @@ Resources:
         DeleteBehavior: DELETE_FROM_DATABASE
       Targets:
         S3Targets:
-          - Path: !Sub 's3://${APIS3Bucket}/data/vaccinations'
+          - Path: !Sub 's3://${APIS3Bucket}/data/vaccinations/processed'
       Configuration: "{\"Version\":1.0,\"CrawlerOutput\":{\"Partitions\":{\"AddOrUpdateBehavior\":\"InheritFromTable\"}}}"
       Tags:
         Stack: !Ref AWS::StackName
@@ -208,6 +210,7 @@ Resources:
           - handler.handler
       Description: Lambda to run great expectations on data
       Timeout: 600
+      MemorySize: 512
       PackageType: Image
       Role: !GetAtt LambdaRole.Arn
       Environment:
@@ -283,18 +286,18 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
-  LambdaDailyTrigger:
+  DailyAPILambdaTrigger:
     Type: AWS::Events::Rule
     Condition: IsProduction
     Properties:
       Description: Trigger APILambda function
-      Name: !Sub 'api-lambda-trigger-${Environment}'
+      Name: !Sub 'daily-api-lambda-trigger-${Environment}'
       ScheduleExpression: !FindInMap [Environments, !Ref Environment, DailyAPILambdaSchedule]
       Targets:
         - Arn: !GetAtt APILambda.Arn
           Id: !Sub 'APILambda-${Environment}'
 
-  LambdaDailyTriggerPermission:
+  DailyAPILambdaTriggerPermission:
     Type: AWS::Lambda::Permission
     Condition: IsProduction
     Properties:
@@ -302,4 +305,25 @@ Resources:
       FunctionName: !GetAtt APILambda.Arn
       Principal: events.amazonaws.com
       SourceAccount: !Ref 'AWS::AccountId'
-      SourceArn: !GetAtt LambdaDailyTrigger.Arn
+      SourceArn: !GetAtt DailyAPILambdaTrigger.Arn
+
+  DailyGELambdaTrigger:
+    Type: AWS::Events::Rule
+    Condition: IsProduction
+    Properties:
+      Description: Trigger GELambda function
+      Name: !Sub 'daily-ge-lambda-trigger-${Environment}'
+      ScheduleExpression: !FindInMap [Environments, !Ref Environment, DailyGELambdaSchedule]
+      Targets:
+        - Arn: !GetAtt GELambda.Arn
+          Id: !Sub 'GELambda-${Environment}'
+
+  DailyGELambdaTriggerPermission:
+    Type: AWS::Lambda::Permission
+    Condition: IsProduction
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt GELambda.Arn
+      Principal: events.amazonaws.com
+      SourceAccount: !Ref 'AWS::AccountId'
+      SourceArn: !GetAtt DailyGELambdaTrigger.Arn
