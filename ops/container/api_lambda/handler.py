@@ -4,7 +4,7 @@ import pandas
 import requests
 
 _API_URL = os.environ["API_URL"]
-_S3_BUCKET = os.environ["_S3_BUCKET"]
+_S3_BUCKET = os.environ["S3_BUCKET"]
 
 
 def handler(event, context):
@@ -14,6 +14,6 @@ def handler(event, context):
     date = f"{pandas.to_datetime(df['meta.lastUpdate'][0]):%Y-%m-%d}"
 
     df.to_parquet(
-        f"{_S3_BUCKET}/vaccinations/raw/{date}.parquet",
+        f"{_S3_BUCKET}/{date}.parquet",
         index=False,
     )

@@ -94,55 +94,55 @@ Resources:
                   - !Sub '${APIS3Bucket.Arn}'
                   - !Sub '${APIS3Bucket.Arn}/*'
 
-  RedshiftCluster:
-    Type: AWS::Redshift::Cluster
-    Properties:
-      ClusterIdentifier: !Sub 'data-pipeline-redshift-cluster-${Environment}'
-      ClusterType: single-node
-      DBName: dev
-      NodeType: dc2.large
-      IamRoles:
-        - !GetAtt RedshiftClusterRole.Arn
-      MasterUsername: appadmin
-      MasterUserPassword: '{{resolve:secretsmanager:data-pipeline-redshift-cluster:SecretString:appadmin}}'
+  # RedshiftCluster:
+  #   Type: AWS::Redshift::Cluster
+  #   Properties:
+  #     ClusterIdentifier: !Sub 'data-pipeline-redshift-cluster-${Environment}'
+  #     ClusterType: single-node
+  #     DBName: dev
+  #     NodeType: dc2.large
+  #     IamRoles:
+  #       - !GetAtt RedshiftClusterRole.Arn
+  #     MasterUsername: appadmin
+  #     MasterUserPassword: '{{resolve:secretsmanager:data-pipeline-redshift-cluster:SecretString:appadmin}}'
 
-  RedshiftClusterRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: redshift.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
-      Path: /
-      Policies:
-        - PolicyName: GlueCatalogAccess
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - glue:*
-                  - glue:CreateDatabase
-                  - glue:GetTable
-                  - glue:GetDatabase
-                Resource:
-                  - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/*'
-                  - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:calatog/*'
-                  - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:calatog'
-        - PolicyName: S3Access
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:*
-                Resource:
-                  - !Sub '${APIS3Bucket.Arn}'
-                  - !Sub '${APIS3Bucket.Arn}/*'
+  # RedshiftClusterRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service: redshift.amazonaws.com
+  #           Action: sts:AssumeRole
+  #     ManagedPolicyArns:
+  #       - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
+  #     Path: /
+  #     Policies:
+  #       - PolicyName: GlueCatalogAccess
+  #         PolicyDocument:
+  #           Version: '2012-10-17'
+  #           Statement:
+  #             - Effect: Allow
+  #               Action:
+  #                 - glue:*
+  #                 - glue:CreateDatabase
+  #                 - glue:GetTable
+  #                 - glue:GetDatabase
+  #               Resource:
+  #                 - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/*'
+  #                 - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:calatog/*'
+  #                 - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:calatog'
+  #       - PolicyName: S3Access
+  #         PolicyDocument:
+  #           Version: '2012-10-17'
+  #           Statement:
+  #             - Effect: Allow
+  #               Action:
+  #                 - s3:*
+  #               Resource:
+  #                 - !Sub '${APIS3Bucket.Arn}'
+  #                 - !Sub '${APIS3Bucket.Arn}/*'
 
   APILambda:
     Type: AWS::Lambda::Function
@@ -155,46 +155,16 @@ Resources:
       Description: Lambda for covid api calls
       Timeout: 300
       PackageType: Image
-      Role: !GetAtt APILambdaRole.Arn
+      Role: !GetAtt LambdaRole.Arn
       Environment:
         Variables:
           API_URL: 'https://api.corona-zahlen.org/germany'
-          BUCKET: !Sub 's3://${APIS3Bucket}/data'
+          S3_BUCKET: !Sub 's3://${APIS3Bucket}/data/vaccinations/raw'
       Tags:
         - Key: Name
           Value: !Ref AWS::StackName
         - Key: Environment
           Value: !Ref Environment
-
-  APILambdaRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      Path: /
-      Policies:
-        - PolicyName: ECRAccess
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - ecr:BatchGetImage
-                  - ecr:GetDownloadUrlForLayer
-                Resource:
-                  - !Sub 'arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/api_lambda'
-              - Effect: Allow
-                Action:
-                  - s3:*
-                Resource:
-                  - !Sub '${APIS3Bucket.Arn}'
-                  - !Sub '${APIS3Bucket.Arn}/*'
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
   APILambdaAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -215,6 +185,81 @@ Resources:
         - !ImportValue CloudWatchAlarmSNSTopic
       OKActions:
         - !ImportValue CloudWatchAlarmSNSTopic
+
+  GELambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ImageUri: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ge_lambda:latest'
+      ImageConfig:
+        Command:
+          - handler.handler
+      Description: Lambda to run great expectations on data
+      Timeout: 600
+      PackageType: Image
+      Role: !GetAtt LambdaRole.Arn
+      Environment:
+        Variables:
+          S3_BUCKET: !Ref APIS3Bucket
+          S3_FOLDER: 'data/vaccinations'
+          DATASOURCE: 'vaccinations'
+          CHECKPOINT: 'checkpoint'
+      Tags:
+        - Key: Name
+          Value: !Ref AWS::StackName
+        - Key: Environment
+          Value: !Ref Environment
+
+  GELambdaAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: !Sub 'Alarm if an error occurs in GELambda (${Environment})'
+      Namespace: 'AWS/Lambda'
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref GELambda
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: ignore
+      Threshold: 1
+      Statistic: Sum
+      Period: 600
+      EvaluationPeriods: 1
+      AlarmActions:
+        - !ImportValue CloudWatchAlarmSNSTopic
+      OKActions:
+        - !ImportValue CloudWatchAlarmSNSTopic
+
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: ECRAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecr:BatchGetImage
+                  - ecr:GetDownloadUrlForLayer
+                Resource:
+                  - !Sub 'arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/api_lambda'
+                  - !Sub 'arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/ge_lambda'
+              - Effect: Allow
+                Action:
+                  - s3:*
+                Resource:
+                  - !Sub '${APIS3Bucket.Arn}'
+                  - !Sub '${APIS3Bucket.Arn}/*'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
   LambdaDailyTrigger:
     Type: AWS::Events::Rule
