@@ -37,6 +37,15 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+      NotificationConfiguration:
+        LambdaConfiguration:
+          - Event: 's3:ObjectCreated:*'
+            Function: !Ref GELambda
+            Filter:
+                S3Key: S3KeyFilter
+                 Rules: 
+                  - Name: Data Bucket
+                    Value: /data/vaccinations/raw/
       Tags:
         - Key: Name
           Value: !Ref AWS::StackName
