@@ -38,14 +38,14 @@ Resources:
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
       NotificationConfiguration:
-        LambdaConfiguration:
-          - Event: 's3:ObjectCreated:*'
-            Function: !Ref GELambda
-            Filter:
-                S3Key: S3KeyFilter
-                 Rules: 
-                  - Name: Data Bucket
-                    Value: /data/vaccinations/raw/
+        LambdaConfigurations:
+            - Event: 's3:ObjectCreated:*'
+              Function: !GetAtt GELambda.Arn
+              Filter:
+                S3Key:
+                  Rules:
+                    - Name: prefix
+                      Value: data/vaccinations/raw/
       Tags:
         - Key: Name
           Value: !Ref AWS::StackName
@@ -224,7 +224,7 @@ Resources:
       Role: !GetAtt LambdaRole.Arn
       Environment:
         Variables:
-          S3_BUCKET: !Ref APIS3Bucket
+          S3_BUCKET: !Sub 'data-pipeline-s3-bucket-${Environment}'
           S3_FOLDER: 'data/vaccinations'
           DATASOURCE: 'vaccinations'
           CHECKPOINT: 'checkpoint'
@@ -290,10 +290,20 @@ Resources:
                 Action:
                   - s3:*
                 Resource:
-                  - !Sub '${APIS3Bucket.Arn}'
-                  - !Sub '${APIS3Bucket.Arn}/*'
+                  - !Sub 'arn:aws:s3:::data-pipeline-s3-bucket-${Environment}'
+                  - !Sub 'arn:aws:s3:::data-pipeline-s3-bucket-${Environment}/*'
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  GELambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt GELambda.Arn
+      Principal: s3.amazonaws.com
+      SourceAccount:
+        Ref: AWS::AccountId
+      SourceArn: !GetAtt APIS3Bucket.Arn
 
   DailyAPILambdaTrigger:
     Type: AWS::Events::Rule
