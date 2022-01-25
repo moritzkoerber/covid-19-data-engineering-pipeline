@@ -26,8 +26,8 @@ repos:
   hooks:
     - id: flake8
 
-- repo: https://github.com/aws-cloudformation/cfn-python-lint
-  rev: v0.56.3
+- repo: https://github.com/aws-cloudformation/cfn-lint
+  rev: v0.57.0
   hooks:
     - id: cfn-python-lint
       files: ops/stack/.*.yaml$
