@@ -15,12 +15,10 @@ Mappings:
   Environments:
     staging:
       DailyAPILambdaSchedule: cron(0 7 ? * * *)
-      DailyGELambdaSchedule: cron(30 7 ? * * *)
-      DailyGlueCrawlerSchedule: cron(45 7 ? * * *)
+      DailyGlueCrawlerSchedule: cron(30 7 ? * * *)
     production:
       DailyAPILambdaSchedule: cron(0 8 ? * * *)
-      DailyGELambdaSchedule: cron(30 8 ? * * *)
-      DailyGlueCrawlerSchedule: cron(45 8 ? * * *)
+      DailyGlueCrawlerSchedule: cron(30 8 ? * * *)
 
 Conditions:
   IsProduction: !Equals [ !Ref Environment, production ]
@@ -325,24 +323,3 @@ Resources:
       Principal: events.amazonaws.com
       SourceAccount: !Ref 'AWS::AccountId'
       SourceArn: !GetAtt DailyAPILambdaTrigger.Arn
-
-  DailyGELambdaTrigger:
-    Type: AWS::Events::Rule
-    Condition: IsProduction
-    Properties:
-      Description: Trigger GELambda function
-      Name: !Sub 'daily-ge-lambda-trigger-${Environment}'
-      ScheduleExpression: !FindInMap [Environments, !Ref Environment, DailyGELambdaSchedule]
-      Targets:
-        - Arn: !GetAtt GELambda.Arn
-          Id: !Sub 'GELambda-${Environment}'
-
-  DailyGELambdaTriggerPermission:
-    Type: AWS::Lambda::Permission
-    Condition: IsProduction
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt GELambda.Arn
-      Principal: events.amazonaws.com
-      SourceAccount: !Ref 'AWS::AccountId'
-      SourceArn: !GetAtt DailyGELambdaTrigger.Arn
