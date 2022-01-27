@@ -74,6 +74,10 @@ def handler(event, context):
 
     context.add_datasource(**datasource_cfg)
 
+    derived_data_asset_name = context.get_available_data_asset_names()[_DATASOURCE][
+        "s3_data_connector"
+    ][0]
+
     checkpoint_dict = {
         "name": _CHECKPOINT,
         "config_version": 1.0,
@@ -84,7 +88,7 @@ def handler(event, context):
                 "batch_request": {
                     "datasource_name": f"{_DATASOURCE}",
                     "data_connector_name": "s3_data_connector",
-                    "data_asset_name": _date_today,
+                    "data_asset_name": derived_data_asset_name,
                     "data_connector_query": {"index": -1},
                 },
                 "expectation_suite_name": "exp_suite",
@@ -102,11 +106,12 @@ def handler(event, context):
         s3_client = boto3.client("s3")
         s3_client.copy_object(
             Bucket=f"{_S3_BUCKET}",
-            CopySource=f"{_S3_BUCKET}/{_S3_FOLDER}/raw/{_date_today}.parquet",
-            Key=f"{_S3_FOLDER}/processed/{_date_today}.parquet",
+            CopySource=f"{_S3_BUCKET}/{_S3_FOLDER}/raw/{derived_data_asset_name}.parquet",
+            Key=f"{_S3_FOLDER}/processed/{derived_data_asset_name}.parquet",
         )
         s3_client.delete_object(
-            Bucket=f"{_S3_BUCKET}", Key=f"{_S3_FOLDER}/raw/{_date_today}.parquet"
+            Bucket=f"{_S3_BUCKET}",
+            Key=f"{_S3_FOLDER}/raw/{derived_data_asset_name}.parquet",
         )
 
     else:
