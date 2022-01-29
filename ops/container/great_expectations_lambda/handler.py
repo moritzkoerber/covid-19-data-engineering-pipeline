@@ -77,6 +77,16 @@ def handler(event, context):
         "s3_data_connector"
     ]
 
+    s3_client = boto3.client("s3")
+
+    def move_file(source_bucket: str, source: str, copy_key: str, delete_key: str):
+        s3_client.copy_object(
+            Bucket=source_bucket,
+            CopySource=source,
+            Key=copy_key,
+        )
+        s3_client.delete_object(Bucket=source_bucket, Key=delete_key)
+
     for i in derived_data_asset_names:
         checkpoint_dict = {
             "name": _CHECKPOINT,
@@ -102,27 +112,19 @@ def handler(event, context):
 
         print(results)
 
-        s3_client = boto3.client("s3")
-
         if results["success"]:
-            s3_client.copy_object(
-                Bucket=f"{_S3_BUCKET}",
-                CopySource=f"{_S3_BUCKET}/{_S3_FOLDER}/raw/{i}.parquet",
-                Key=f"{_S3_FOLDER}/{_S3_FOLDER_SUCCESS}/{i}.parquet",
-            )
-            s3_client.delete_object(
-                Bucket=f"{_S3_BUCKET}",
-                Key=f"{_S3_FOLDER}/raw/{i}.parquet",
+            move_file(
+                source_bucket=_S3_BUCKET,
+                source=f"{_S3_BUCKET}/{_S3_FOLDER}/raw/{i}.parquet",
+                copy_key=f"{_S3_FOLDER}/{_S3_FOLDER_SUCCESS}/{i}.parquet",
+                delete_key=f"{_S3_FOLDER}/raw/{i}.parquet",
             )
 
         else:
-            s3_client.copy_object(
-                Bucket=f"{_S3_BUCKET}",
-                CopySource=f"{_S3_BUCKET}/{_S3_FOLDER}/raw/{i}.parquet",
-                Key=f"{_S3_FOLDER}/{_S3_FOLDER_FAILURE}/{i}.parquet",
-            )
-            s3_client.delete_object(
-                Bucket=f"{_S3_BUCKET}",
-                Key=f"{_S3_FOLDER}/raw/{i}.parquet",
+            move_file(
+                source_bucket=_S3_BUCKET,
+                source=f"{_S3_BUCKET}/{_S3_FOLDER}/raw/{i}.parquet",
+                copy_key=f"{_S3_FOLDER}/{_S3_FOLDER_FAILURE}/{i}.parquet",
+                delete_key=f"{_S3_FOLDER}/raw/{i}.parquet",
             )
             raise Exception("Error: Data validation not successful")
