@@ -1,5 +1,4 @@
 import os
-from datetime import date
 
 import boto3
 
@@ -8,10 +7,10 @@ from great_expectations.data_context.types.base import DataContextConfig
 
 _S3_BUCKET = os.environ["S3_BUCKET"]
 _S3_FOLDER = os.environ["S3_FOLDER"]
+_S3_FOLDER_SUCCESS = os.environ["S3_FOLDER_SUCCESS"]
+_S3_FOLDER_FAILURE = os.environ["S3_FOLDER_FAILURE"]
 _DATASOURCE = os.environ["DATASOURCE"]
 _CHECKPOINT = os.environ["CHECKPOINT"]
-
-_date_today = date.today().strftime("%Y-%m-%d")
 
 
 def handler(event, context):
@@ -74,45 +73,56 @@ def handler(event, context):
 
     context.add_datasource(**datasource_cfg)
 
-    derived_data_asset_name = context.get_available_data_asset_names()[_DATASOURCE][
+    derived_data_asset_names = context.get_available_data_asset_names()[_DATASOURCE][
         "s3_data_connector"
-    ][0]
+    ]
 
-    checkpoint_dict = {
-        "name": _CHECKPOINT,
-        "config_version": 1.0,
-        "class_name": "SimpleCheckpoint",
-        "run_name_template": "%Y%m%d-%H%M%S-my-run-name-template",
-        "validations": [
-            {
-                "batch_request": {
-                    "datasource_name": f"{_DATASOURCE}",
-                    "data_connector_name": "s3_data_connector",
-                    "data_asset_name": derived_data_asset_name,
-                    "data_connector_query": {"index": -1},
-                },
-                "expectation_suite_name": "exp_suite",
-            }
-        ],
-    }
+    for i in derived_data_asset_names:
+        checkpoint_dict = {
+            "name": _CHECKPOINT,
+            "config_version": 1.0,
+            "class_name": "SimpleCheckpoint",
+            "run_name_template": "%Y%m%d-%H%M%S-my-run-name-template",
+            "validations": [
+                {
+                    "batch_request": {
+                        "datasource_name": f"{_DATASOURCE}",
+                        "data_connector_name": "s3_data_connector",
+                        "data_asset_name": i,
+                        "data_connector_query": {"index": -1},
+                    },
+                    "expectation_suite_name": "exp_suite",
+                }
+            ],
+        }
 
-    context.add_checkpoint(**checkpoint_dict)
+        context.add_checkpoint(**checkpoint_dict)
 
-    results = context.run_checkpoint(checkpoint_name=_CHECKPOINT)
+        results = context.run_checkpoint(checkpoint_name=_CHECKPOINT)
 
-    print(results)
+        print(results)
 
-    if results["success"]:
         s3_client = boto3.client("s3")
-        s3_client.copy_object(
-            Bucket=f"{_S3_BUCKET}",
-            CopySource=f"{_S3_BUCKET}/{_S3_FOLDER}/raw/{derived_data_asset_name}.parquet",
-            Key=f"{_S3_FOLDER}/processed/{derived_data_asset_name}.parquet",
-        )
-        s3_client.delete_object(
-            Bucket=f"{_S3_BUCKET}",
-            Key=f"{_S3_FOLDER}/raw/{derived_data_asset_name}.parquet",
-        )
 
-    else:
-        raise Exception("Error: Data validation not successful")
+        if results["success"]:
+            s3_client.copy_object(
+                Bucket=f"{_S3_BUCKET}",
+                CopySource=f"{_S3_BUCKET}/{_S3_FOLDER}/raw/{i}.parquet",
+                Key=f"{_S3_FOLDER}/{_S3_FOLDER_SUCCESS}/{i}.parquet",
+            )
+            s3_client.delete_object(
+                Bucket=f"{_S3_BUCKET}",
+                Key=f"{_S3_FOLDER}/raw/{i}.parquet",
+            )
+
+        else:
+            s3_client.copy_object(
+                Bucket=f"{_S3_BUCKET}",
+                CopySource=f"{_S3_BUCKET}/{_S3_FOLDER}/raw/{i}.parquet",
+                Key=f"{_S3_FOLDER}/{_S3_FOLDER_FAILURE}/{i}.parquet",
+            )
+            s3_client.delete_object(
+                Bucket=f"{_S3_BUCKET}",
+                Key=f"{_S3_FOLDER}/raw/{i}.parquet",
+            )
+            raise Exception("Error: Data validation not successful")
