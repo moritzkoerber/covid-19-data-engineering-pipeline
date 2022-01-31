@@ -65,7 +65,7 @@ def handler(event, context):
                 "prefix": f"{_S3_FOLDER}/raw",
                 "default_regex": {
                     "group_names": ["data_asset_name"],
-                    "pattern": fr"{_S3_FOLDER}/raw/(\d{{4}}-\d{{2}}-\d{{2}})\.parquet",
+                    "pattern": rf"{_S3_FOLDER}/raw/(\d{{4}}-\d{{2}}-\d{{2}})\.parquet",
                 },
             },
         },
@@ -88,6 +88,7 @@ def handler(event, context):
         s3_client.delete_object(Bucket=source_bucket, Key=delete_key)
 
     for i in derived_data_asset_names:
+        print(f"Validating data asset: {i}...")
         checkpoint_dict = {
             "name": _CHECKPOINT,
             "config_version": 1.0,
