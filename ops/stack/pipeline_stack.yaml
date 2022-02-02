@@ -45,10 +45,12 @@ Resources:
                     - Name: prefix
                       Value: data/vaccinations/raw/
       Tags:
-        - Key: Name
+        - Key: Stack
           Value: !Ref AWS::StackName
         - Key: Environment
           Value: !Ref Environment
+        - Key: Name
+          Value: ApiPipeline
 
   APIGlueDatabase:
     Type: AWS::Glue::Database
@@ -172,10 +174,12 @@ Resources:
           API_URL: 'https://api.corona-zahlen.org/germany'
           S3_BUCKET: !Sub 's3://${APIS3Bucket}/data/vaccinations/raw'
       Tags:
-        - Key: Name
+        - Key: Stack
           Value: !Ref AWS::StackName
         - Key: Environment
           Value: !Ref Environment
+        - Key: Name
+          Value: ApiPipeline
 
   APILambdaRepository:
     Type: AWS::ECR::Repository
@@ -229,10 +233,12 @@ Resources:
           DATASOURCE: 'vaccinations'
           CHECKPOINT: 'checkpoint'
       Tags:
-        - Key: Name
+        - Key: Stack
           Value: !Ref AWS::StackName
         - Key: Environment
           Value: !Ref Environment
+        - Key: Name
+          Value: ApiPipeline
 
   GELambdaAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -325,3 +331,44 @@ Resources:
       Principal: events.amazonaws.com
       SourceAccount: !Ref 'AWS::AccountId'
       SourceArn: !GetAtt DailyAPILambdaTrigger.Arn
+
+  GlueDataProcessingJob:
+    Type: AWS::Glue::Job
+    Properties:
+      AllocatedCapacity: 1
+      Command:
+        Name: GlueDataProcessingJob
+        ScriptLocation: 's3://data-engineering-project-production/data/gluejob.py'
+      GlueVersion: '3.0'
+      NumberOfWorkers: 1
+      Role: !Ref GlueProcessingRole
+      Timeout: 30
+      WorkerType: Standard
+      Tags:
+        Stack: !Ref AWS::StackName
+        Environment: !Ref Environment
+        Name: ApiPipeline
+
+  GlueProcessingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: glue.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:*
+                Resource:
+                  - !Sub 'arn:aws:s3:::data-pipeline-s3-bucket-${Environment}'
+                  - !Sub 'arn:aws:s3:::data-pipeline-s3-bucket-${Environment}/*'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
