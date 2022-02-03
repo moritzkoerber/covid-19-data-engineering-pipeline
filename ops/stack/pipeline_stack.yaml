@@ -335,15 +335,18 @@ Resources:
   GlueDataProcessingJob:
     Type: AWS::Glue::Job
     Properties:
-      AllocatedCapacity: 1
       Command:
-        Name: GlueDataProcessingJob
-        ScriptLocation: 's3://data-engineering-project-production/data/gluejob.py'
+        Name: glueetl
+        ScriptLocation: !Sub 's3://${APIS3Bucket}/data/vaccinations_data_processing.py'
       GlueVersion: '3.0'
-      NumberOfWorkers: 1
+      NumberOfWorkers: 2
+      Name: !Sub 'process-vaccinations-data-${Environment}'
+      WorkerType: 'G.1X'
+      MaxRetries: 0
+      ExecutionProperty:
+        MaxConcurrentRuns: 1
       Role: !Ref GlueProcessingRole
       Timeout: 30
-      WorkerType: Standard
       Tags:
         Stack: !Ref AWS::StackName
         Environment: !Ref Environment
