@@ -75,7 +75,7 @@ Resources:
         DeleteBehavior: DELETE_FROM_DATABASE
       Targets:
         S3Targets:
-          - Path: !Sub 's3://${APIS3Bucket}/data/vaccinations/valid'
+          - Path: !Sub 's3://${APIS3Bucket}/data/vaccinations/processed/'
       Configuration: "{\"Version\":1.0,\"CrawlerOutput\":{\"Partitions\":{\"AddOrUpdateBehavior\":\"InheritFromTable\"}}}"
       Tags:
         Stack: !Ref AWS::StackName
@@ -337,8 +337,12 @@ Resources:
     Properties:
       Command:
         Name: glueetl
-        ScriptLocation: !Sub 's3://${APIS3Bucket}/data/vaccinations_data_processing.py'
+        ScriptLocation: !Sub 's3://${APIS3Bucket}/scripts/glue/vaccinations_data_processing.py'
       GlueVersion: '3.0'
+      DefaultArguments:
+        '--bucket': !Ref APIS3Bucket
+        '--prefix': 'data/vaccinations/valid/'
+        '--write_location': 'data/vaccinations/processed/'
       NumberOfWorkers: 2
       Name: !Sub 'process-vaccinations-data-${Environment}'
       WorkerType: 'G.1X'
@@ -369,7 +373,10 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - s3:*
+                  - s3:ListObjects
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:Delete*
                 Resource:
                   - !Sub 'arn:aws:s3:::data-pipeline-s3-bucket-${Environment}'
                   - !Sub 'arn:aws:s3:::data-pipeline-s3-bucket-${Environment}/*'
