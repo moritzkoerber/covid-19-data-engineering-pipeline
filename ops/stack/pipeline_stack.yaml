@@ -332,6 +332,15 @@ Resources:
       SourceAccount: !Ref 'AWS::AccountId'
       SourceArn: !GetAtt DailyAPILambdaTrigger.Arn
 
+  APIGlueProcessingWorkflow:
+    Type: AWS::Glue::Workflow
+    Properties:
+      Name: !Sub 'data-processing-workflow-${Environment}'
+      Tags:
+        Stack: !Ref AWS::StackName
+        Environment: !Ref Environment
+        Name: ApiPipeline
+
   GlueDataProcessingJob:
     Type: AWS::Glue::Job
     Properties:
@@ -382,3 +391,23 @@ Resources:
                   - !Sub 'arn:aws:s3:::data-pipeline-s3-bucket-${Environment}/*'
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
+
+  GlueCrawlerTrigger:
+    Type: AWS::Glue::Trigger
+    Properties:
+      Name: !Sub 'api-data-glue-crawler-trigger-${Environment}'
+      WorkflowName: !Ref APIGlueProcessingWorkflow
+      Actions:
+        - CrawlerName: !Ref APIDataCrawler
+      Description: !Sub 'Triggers ${APIDataCrawler} after ${GlueDataProcessingJob} successfully ran in ${Environment}'
+      Predicate:
+        Conditions:
+          - JobName: !Ref GlueDataProcessingJob
+            State: SUCCEEDED
+            LogicalOperator: EQUALS
+      StartOnCreation: True
+      Type: CONDITIONAL
+      Tags:
+        Stack: !Ref AWS::StackName
+        Environment: !Ref Environment
+        Name: ApiPipeline
