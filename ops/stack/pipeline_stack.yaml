@@ -35,6 +35,7 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+      AccessControl: Private
       NotificationConfiguration:
         LambdaConfigurations:
             - Event: 's3:ObjectCreated:*'
@@ -51,6 +52,33 @@ Resources:
           Value: !Ref Environment
         - Key: Name
           Value: ApiPipeline
+
+  APIS3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref APIS3Bucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - cloudtrail.amazonaws.com
+            Action:
+              - s3:GetBucketAcl
+            Resource:
+              - !Sub '${APIS3Bucket.Arn}'
+          - Effect: Allow
+            Principal:
+              Service:
+                - cloudtrail.amazonaws.com
+            Action:
+              - s3:PutObject
+            Resource:
+              - !Sub '${APIS3Bucket.Arn}/logs/cloudtrail/*'
+            Condition:
+              StringEquals:
+                s3:x-amz-acl: bucket-owner-full-control
 
   APIGlueDatabase:
     Type: AWS::Glue::Database
@@ -358,14 +386,14 @@ Resources:
       MaxRetries: 0
       ExecutionProperty:
         MaxConcurrentRuns: 1
-      Role: !Ref GlueProcessingRole
+      Role: !Ref GlueDataProcessingJobRole
       Timeout: 30
       Tags:
         Stack: !Ref AWS::StackName
         Environment: !Ref Environment
         Name: ApiPipeline
 
-  GlueProcessingRole:
+  GlueDataProcessingJobRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -391,6 +419,107 @@ Resources:
                   - !Sub 'arn:aws:s3:::data-pipeline-s3-bucket-${Environment}/*'
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
+
+#  S3EventNotificationRole:
+#    Type: AWS::IAM::Role
+#    Properties:
+#      AssumeRolePolicyDocument:
+#        Statement:
+#          - Effect: Allow
+#            Principal:
+#              Service: glue.amazonaws.com
+#            Action: sts:AssumeRole
+#      Path: /
+#      Policies:
+#        - PolicyName: S3EventNotification
+#          PolicyDocument:
+#            Version: '2012-10-17'
+#            Statement:
+#              - Effect: Allow
+#                Action:
+#                  - glue:notifyEvent
+#                Resource:
+#                  - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:workflow/${APIGlueProcessingWorkflow}'
+#      ManagedPolicyArns:
+#        - arn:aws:iam::aws:policy/service-role/CloudWatchEventsBuiltInTargetExecutionAccess
+#        - arn:aws:iam::aws:policy/service-role/CloudWatchEventsInvocationAccess
+
+  GlueJobTrigger:
+    Type: AWS::Glue::Trigger
+    Properties:
+      Name: !Sub 'api-data-glue-job-trigger-${Environment}'
+      WorkflowName: !Ref APIGlueProcessingWorkflow
+      Description: !Sub 'Triggers ${GlueDataProcessingJob} in ${Environment}'
+      Actions:
+          - JobName: !Ref GlueDataProcessingJob
+      Type: EVENT
+      Tags:
+        Stack: !Ref AWS::StackName
+        Environment: !Ref Environment
+        Name: ApiPipeline
+
+  APIS3BucketCloudTrail:
+    Type: AWS::CloudTrail::Trail
+    Properties:
+      TrailName: !Sub 'api-data-glue-job-cloudtrail-${Environment}'
+      IsLogging: True
+      S3BucketName: !Ref APIS3Bucket
+      S3KeyPrefix: 'logs/cloudtrail/'
+      EventSelectors:
+        - DataResources:
+            - Type: AWS::S3::Object
+              Values:
+                - !Sub 'arn:aws:s3:::${APIS3Bucket}/data/vaccinations/valid/'
+          IncludeManagementEvents: False
+          ReadWriteType: WriteOnly
+
+  GlueJobEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: !Sub 'Triggers ${GlueDataProcessingJob} in ${Environment} when ${GELambda} puts a valid data file in the corresponding folder'
+      EventPattern:
+        source:
+          - aws.s3
+        detail-type:
+          - CloudTrail API Call
+        detail:
+          eventSource:
+            - s3.amazonaws.com
+          eventName:
+            - PutObject
+          requestParameters:
+            bucketName:
+              - !Ref APIS3Bucket
+            key:
+              - prefix: data/vaccinations/valid/
+      Name: !Sub 'data-pipeline-valid-s3-event-${Environment}'
+      RoleArn: !GetAtt GlueJobEventRuleExecutionRole.Arn
+      State: ENABLED
+      Targets:
+        - Arn: !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:workflow/${GlueDataProcessingJob}'
+          RoleArn: !GetAtt GlueDataProcessingJobRole.Arn
+          Id: CloudtrailWorkflowTrigger
+
+  GlueJobEventRuleExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: GlueNotification
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - glue:notifyEvent
+                Resource:
+                  - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:workflow/${GlueDataProcessingJob}'
 
   GlueCrawlerTrigger:
     Type: AWS::Glue::Trigger
