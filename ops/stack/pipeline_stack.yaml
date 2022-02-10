@@ -452,6 +452,7 @@ Resources:
   GlueJobEventRule:
     Type: AWS::Events::Rule
     Properties:
+      Name: !Sub 'data-pipeline-valid-s3-event-${Environment}'
       Description: !Sub 'Triggers ${GlueDataProcessingJob} in ${Environment} when ${GELambda} puts a valid data file in the corresponding folder'
       EventPattern:
         source:
@@ -468,7 +469,6 @@ Resources:
               - !Ref APIS3Bucket
             key:
               - prefix: data/vaccinations/valid/
-      Name: !Sub 'data-pipeline-valid-s3-event-${Environment}'
       State: ENABLED
       Targets:
         - Arn: !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:workflow/${APIGlueProcessingWorkflow}'
@@ -499,6 +499,7 @@ Resources:
   GlueJobEventFailureNotification:
     Type: AWS::Events::Rule
     Properties:
+      Name:  !Sub 'api-data-glue-job-failure-notification-${Environment}'
       Description: !Sub 'Notifies in case ${GlueDataProcessingJob} fails in ${Environment}'
       EventPattern:
         source:
