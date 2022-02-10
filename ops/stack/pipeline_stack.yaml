@@ -496,6 +496,32 @@ Resources:
                 Resource:
                   - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:workflow/${APIGlueProcessingWorkflow}'
 
+  GlueJobEventFailureNotification:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: !Sub 'Notifies in case ${GlueDataProcessingJob} fails in ${Environment}'
+      EventPattern:
+        source:
+          - aws.glue
+        detail-type:
+          - Glue Job State Change
+        detail:
+          jobName:
+            - !Ref GlueDataProcessingJob
+          state:
+            - FAILED
+            - TIMEOUT
+      State: ENABLED
+      Targets:
+        - Arn: !ImportValue CloudWatchAlarmSNSTopic
+          Id: !Sub 'GlueDataProcessingJobFailed${Environment}'
+          InputTransformer:
+            InputPathsMap:
+              runId: '$.detail.jobRunId'
+              name: '$.detail.jobName'
+              state: '$.detail.state'
+            InputTemplate: 'Job (<name>) failed with state: <state>'
+
   GlueCrawlerTrigger:
     Type: AWS::Glue::Trigger
     Properties:
