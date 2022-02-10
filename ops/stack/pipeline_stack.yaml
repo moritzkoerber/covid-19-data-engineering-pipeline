@@ -420,30 +420,6 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
 
-#  S3EventNotificationRole:
-#    Type: AWS::IAM::Role
-#    Properties:
-#      AssumeRolePolicyDocument:
-#        Statement:
-#          - Effect: Allow
-#            Principal:
-#              Service: glue.amazonaws.com
-#            Action: sts:AssumeRole
-#      Path: /
-#      Policies:
-#        - PolicyName: S3EventNotification
-#          PolicyDocument:
-#            Version: '2012-10-17'
-#            Statement:
-#              - Effect: Allow
-#                Action:
-#                  - glue:notifyEvent
-#                Resource:
-#                  - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:workflow/${APIGlueProcessingWorkflow}'
-#      ManagedPolicyArns:
-#        - arn:aws:iam::aws:policy/service-role/CloudWatchEventsBuiltInTargetExecutionAccess
-#        - arn:aws:iam::aws:policy/service-role/CloudWatchEventsInvocationAccess
-
   GlueJobTrigger:
     Type: AWS::Glue::Trigger
     Properties:
@@ -464,7 +440,7 @@ Resources:
       TrailName: !Sub 'api-data-glue-job-cloudtrail-${Environment}'
       IsLogging: True
       S3BucketName: !Ref APIS3Bucket
-      S3KeyPrefix: 'logs/cloudtrail/'
+      S3KeyPrefix: 'logs/cloudtrail'
       EventSelectors:
         - DataResources:
             - Type: AWS::S3::Object
@@ -481,7 +457,7 @@ Resources:
         source:
           - aws.s3
         detail-type:
-          - CloudTrail API Call
+          - AWS API Call via CloudTrail
         detail:
           eventSource:
             - s3.amazonaws.com
@@ -493,14 +469,13 @@ Resources:
             key:
               - prefix: data/vaccinations/valid/
       Name: !Sub 'data-pipeline-valid-s3-event-${Environment}'
-      RoleArn: !GetAtt GlueJobEventRuleExecutionRole.Arn
       State: ENABLED
       Targets:
-        - Arn: !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:workflow/${GlueDataProcessingJob}'
-          RoleArn: !GetAtt GlueDataProcessingJobRole.Arn
-          Id: CloudtrailWorkflowTrigger
+        - Arn: !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:workflow/${APIGlueProcessingWorkflow}'
+          RoleArn: !GetAtt GlueJobEventRuleRole.Arn
+          Id: !Sub 'CloudtrailWorkflowTrigger${Environment}'
 
-  GlueJobEventRuleExecutionRole:
+  GlueJobEventRuleRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -519,7 +494,7 @@ Resources:
                 Action:
                   - glue:notifyEvent
                 Resource:
-                  - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:workflow/${GlueDataProcessingJob}'
+                  - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:workflow/${APIGlueProcessingWorkflow}'
 
   GlueCrawlerTrigger:
     Type: AWS::Glue::Trigger
