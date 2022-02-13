@@ -4,6 +4,11 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+boto3 = "*"
+great_expectations = "*"
+pandas = "*"
+requests = "*"
+pyspark = "*"
 
 [dev-packages]
 pre-commit = "*"
