@@ -1,0 +1,38 @@
+name: Pull Request
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+env:
+  PYTHON_VERSION: '3.8.2'
+
+jobs:
+  linting:
+    name: Lint files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Setup pre-commit cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cache/pre-commit
+            ~/.cache/pip
+          key: ${{ runner.os }}-${{ env.PYTHON_VERSION }}-pre-commit-${{ hashFiles('**/.pre-commit-config.yaml*') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ env.PYTHON_VERSION }}-pre-commit-
+
+      - name: Install and run pre-commit
+        run: |
+          pip install pre-commit
+          pre-commit run --all-files
