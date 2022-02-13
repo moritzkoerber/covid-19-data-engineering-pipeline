@@ -1,0 +1,4 @@
+[tool.isort]
+multi_line_output = 3
+line_length = 88
+known_first_party = ["boto3", "great_expectations"]

@@ -1,10 +1,11 @@
 import sys
 from functools import reduce
 
-import boto3
 from awsglue.utils import getResolvedOptions
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col
+
+import boto3
 
 args = getResolvedOptions(sys.argv, ["bucket", "prefix", "write_location"])
 _BUCKET = args["bucket"]
