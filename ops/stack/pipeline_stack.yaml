@@ -344,7 +344,7 @@ Resources:
     Condition: IsProduction
     Properties:
       Description: Trigger APILambda function
-      Name: !Sub 'daily-api-lambda-trigger-${Environment}'
+      Name: !Sub 'api-data-daily-lambda-trigger-${Environment}'
       ScheduleExpression: !FindInMap [Environments, !Ref Environment, DailyAPILambdaSchedule]
       Targets:
         - Arn: !GetAtt APILambda.Arn
@@ -363,7 +363,7 @@ Resources:
   APIGlueProcessingWorkflow:
     Type: AWS::Glue::Workflow
     Properties:
-      Name: !Sub 'data-processing-workflow-${Environment}'
+      Name: !Sub 'data-processing-glue-workflow-${Environment}'
       Tags:
         Stack: !Ref AWS::StackName
         Environment: !Ref Environment
@@ -381,7 +381,7 @@ Resources:
         '--prefix': 'data/vaccinations/valid/'
         '--write_location': 'data/vaccinations/processed/'
       NumberOfWorkers: 2
-      Name: !Sub 'process-vaccinations-data-${Environment}'
+      Name: !Sub 'data-processing-glue-job-${Environment}'
       WorkerType: 'G.1X'
       MaxRetries: 0
       ExecutionProperty:
@@ -423,11 +423,11 @@ Resources:
   GlueJobTrigger:
     Type: AWS::Glue::Trigger
     Properties:
-      Name: !Sub 'api-data-glue-job-trigger-${Environment}'
+      Name: !Sub 'data-processing-glue-job-trigger-${Environment}'
       WorkflowName: !Ref APIGlueProcessingWorkflow
       Description: !Sub 'Triggers ${GlueDataProcessingJob} in ${Environment}'
       Actions:
-          - JobName: !Ref GlueDataProcessingJob
+        - JobName: !Ref GlueDataProcessingJob
       Type: EVENT
       Tags:
         Stack: !Ref AWS::StackName
@@ -437,7 +437,7 @@ Resources:
   APIS3BucketCloudTrail:
     Type: AWS::CloudTrail::Trail
     Properties:
-      TrailName: !Sub 'api-data-glue-job-cloudtrail-${Environment}'
+      TrailName: !Sub 'data-pipeline-cloudtrail-${Environment}'
       IsLogging: True
       S3BucketName: !Ref APIS3Bucket
       S3KeyPrefix: 'logs/cloudtrail'
@@ -450,9 +450,10 @@ Resources:
           ReadWriteType: WriteOnly
 
   GlueJobEventRule:
+    DependsOn: APIGlueProcessingWorkflow
     Type: AWS::Events::Rule
     Properties:
-      Name: !Sub 'data-pipeline-valid-s3-event-${Environment}'
+      Name: !Sub 'data-pipeline-valid-data-event-${Environment}'
       Description: !Sub 'Triggers ${GlueDataProcessingJob} in ${Environment} when ${GELambda} puts a valid data file in the corresponding folder'
       EventPattern:
         source:
@@ -486,7 +487,7 @@ Resources:
             Action: sts:AssumeRole
       Path: /
       Policies:
-        - PolicyName: GlueNotification
+        - PolicyName: GlueFailureNotification
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -499,7 +500,7 @@ Resources:
   GlueJobEventFailureNotification:
     Type: AWS::Events::Rule
     Properties:
-      Name:  !Sub 'api-data-glue-job-failure-notification-${Environment}'
+      Name:  !Sub 'data-processing-glue-job-failure-notification-${Environment}'
       Description: !Sub 'Notifies in case ${GlueDataProcessingJob} fails in ${Environment}'
       EventPattern:
         source:
@@ -516,17 +517,11 @@ Resources:
       Targets:
         - Arn: !ImportValue CloudWatchAlarmSNSTopic
           Id: !Sub 'GlueDataProcessingJobFailed${Environment}'
-          InputTransformer:
-            InputPathsMap:
-              runId: '$.detail.jobRunId'
-              name: '$.detail.jobName'
-              state: '$.detail.state'
-            InputTemplate: 'Job (<name>) failed with state: <state>'
 
   GlueCrawlerTrigger:
     Type: AWS::Glue::Trigger
     Properties:
-      Name: !Sub 'api-data-glue-crawler-trigger-${Environment}'
+      Name: !Sub 'data-processing-glue-crawler-trigger-${Environment}'
       WorkflowName: !Ref APIGlueProcessingWorkflow
       Actions:
         - CrawlerName: !Ref APIDataCrawler
