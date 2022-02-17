@@ -32,13 +32,13 @@ repos:
     - id: flake8
 
 - repo: https://github.com/aws-cloudformation/cfn-lint
-  rev: v0.58.0
+  rev: v0.58.1
   hooks:
     - id: cfn-python-lint
       files: ops/stack/.*.yaml$
 
 - repo: https://github.com/sirosen/check-jsonschema
-  rev: 0.10.2
+  rev: 0.11.0
   hooks:
     - id: check-github-workflows
     - id: check-github-actions
