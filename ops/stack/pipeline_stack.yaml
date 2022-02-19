@@ -219,6 +219,59 @@ Resources:
         ScanOnPush: True
       RepositoryName: api_lambda
 
+  LambdasStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: !Sub 'api-data-state-machine-${Environment}'
+      DefinitionString: |-
+        {
+          "StartAt": "APIQuery",
+          "States": {
+            "APIQuery": {
+              "Type": "Task",
+              "Resource": "${APILambda}",
+              "Retry": [ {
+                "ErrorEquals":  [ "Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
+                "IntervalSeconds": 21600,
+                "MaxAttempts": 2
+              } ],
+              "End": true
+            }
+          }
+        }
+      DefinitionSubstitutions:
+        APILambda: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:APILambda'
+      RoleArn: !GetAtt StateMachineRole.Arn
+      Tags:
+        - Key: Stack
+          Value: !Ref AWS::StackName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Name
+          Value: ApiPipeline
+
+  StateMachineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - states.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: StatesExecutionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: !GetAtt APILambda.Arn
+
   APILambdaAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
