@@ -15,10 +15,8 @@ Mappings:
   Environments:
     staging:
       DailyAPILambdaSchedule: cron(0 7 ? * * *)
-      DailyGlueCrawlerSchedule: cron(30 7 ? * * *)
     production:
       DailyAPILambdaSchedule: cron(0 8 ? * * *)
-      DailyGlueCrawlerSchedule: cron(30 8 ? * * *)
 
 Conditions:
   IsProduction: !Equals [ !Ref Environment, production ]
@@ -96,8 +94,6 @@ Resources:
       Description: Glue Crawler for API data
       Name: !Sub 'api-data-glue-crawler-${Environment}'
       Role: !Ref APICrawlerRole
-      Schedule:
-        ScheduleExpression: !FindInMap [Environments, !Ref Environment, DailyGlueCrawlerSchedule]
       SchemaChangePolicy:
         UpdateBehavior: UPDATE_IN_DATABASE
         DeleteBehavior: DELETE_FROM_DATABASE
