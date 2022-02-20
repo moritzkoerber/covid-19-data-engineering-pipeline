@@ -16,7 +16,7 @@ Mappings:
     staging:
       DailyAPILambdaSchedule: cron(0 7 ? * * *)
     production:
-      DailyAPILambdaSchedule: cron(0 8 ? * * *)
+      DailyAPILambdaSchedule: cron(25 * ? * * *)
 
 Conditions:
   IsProduction: !Equals [ !Ref Environment, production ]
@@ -219,6 +219,7 @@ Resources:
     Type: AWS::StepFunctions::StateMachine
     Properties:
       StateMachineName: !Sub 'api-data-state-machine-${Environment}'
+      RoleArn: !GetAtt StateMachineRole.Arn
       DefinitionString: |-
         {
           "StartAt": "APIQuery",
@@ -226,8 +227,11 @@ Resources:
             "APIQuery": {
               "Type": "Task",
               "Resource": "${APILambda}",
+              "Parameters": {
+                "InvocationType": "Event"
+                },
               "Retry": [ {
-                "ErrorEquals":  [ "Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
+                "ErrorEquals":  [ "Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.Unknown"],
                 "IntervalSeconds": 21600,
                 "MaxAttempts": 2
               } ],
@@ -237,7 +241,6 @@ Resources:
         }
       DefinitionSubstitutions:
         APILambda: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:APILambda'
-      RoleArn: !GetAtt StateMachineRole.Arn
       Tags:
         - Key: Stack
           Value: !Ref AWS::StackName
@@ -254,8 +257,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service:
-                - states.amazonaws.com
+              Service: states.amazonaws.com
             Action: sts:AssumeRole
       Path: /
       Policies:
@@ -378,6 +380,49 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
+  DailyAPIStateMachineTrigger:
+    Type: AWS::Events::Rule
+    Condition: IsProduction
+    Properties:
+      Description: Trigger APILambda State Machine
+      Name: !Sub 'api-data-state-machine-trigger-${Environment}'
+      ScheduleExpression: !FindInMap [Environments, !Ref Environment, DailyAPILambdaSchedule]
+      Targets:
+        - Arn: !GetAtt LambdasStateMachine.Arn
+          Id: !Sub 'APILambda-state-machine-${Environment}'
+          RoleArn: !GetAtt DailyAPIStateMachineTriggerRole.Arn
+
+  DailyAPIStateMachineTriggerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StateMachineExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - states:StartExecution
+                Resource:
+                  - !Ref LambdasStateMachine
+
+  DailyAPIStateMachineTriggerPermission:
+    Type: AWS::Lambda::Permission
+    Condition: IsProduction
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt APILambda.Arn
+      Principal: events.amazonaws.com
+      SourceAccount: !Ref 'AWS::AccountId'
+      SourceArn: !GetAtt DailyAPIStateMachineTrigger.Arn
+
   GELambdaInvokePermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -387,27 +432,6 @@ Resources:
       SourceAccount:
         Ref: AWS::AccountId
       SourceArn: !GetAtt APIS3Bucket.Arn
-
-  DailyAPILambdaTrigger:
-    Type: AWS::Events::Rule
-    Condition: IsProduction
-    Properties:
-      Description: Trigger APILambda function
-      Name: !Sub 'api-data-daily-lambda-trigger-${Environment}'
-      ScheduleExpression: !FindInMap [Environments, !Ref Environment, DailyAPILambdaSchedule]
-      Targets:
-        - Arn: !GetAtt APILambda.Arn
-          Id: !Sub 'APILambda-${Environment}'
-
-  DailyAPILambdaTriggerPermission:
-    Type: AWS::Lambda::Permission
-    Condition: IsProduction
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !GetAtt APILambda.Arn
-      Principal: events.amazonaws.com
-      SourceAccount: !Ref 'AWS::AccountId'
-      SourceArn: !GetAtt DailyAPILambdaTrigger.Arn
 
   APIGlueProcessingWorkflow:
     Type: AWS::Glue::Workflow
