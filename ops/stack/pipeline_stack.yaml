@@ -16,7 +16,7 @@ Mappings:
     staging:
       DailyAPILambdaSchedule: cron(0 7 ? * * *)
     production:
-      DailyAPILambdaSchedule: cron(25 * ? * * *)
+      DailyAPILambdaSchedule: cron(0 8 ? * * *)
 
 Conditions:
   IsProduction: !Equals [ !Ref Environment, production ]
@@ -240,7 +240,7 @@ Resources:
           }
         }
       DefinitionSubstitutions:
-        APILambda: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:APILambda'
+        APILambda: !GetAtt APILambda.Arn
       Tags:
         - Key: Stack
           Value: !Ref AWS::StackName
@@ -521,6 +521,13 @@ Resources:
                 - !Sub 'arn:aws:s3:::${APIS3Bucket}/data/vaccinations/valid/'
           IncludeManagementEvents: False
           ReadWriteType: WriteOnly
+      Tags:
+        - Key: Stack
+          Value: !Ref AWS::StackName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Name
+          Value: ApiPipeline
 
   GlueJobEventRule:
     DependsOn: APIGlueProcessingWorkflow
@@ -538,6 +545,7 @@ Resources:
             - s3.amazonaws.com
           eventName:
             - PutObject
+            - CopyObject
           requestParameters:
             bucketName:
               - !Ref APIS3Bucket
