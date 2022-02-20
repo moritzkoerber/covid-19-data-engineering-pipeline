@@ -274,10 +274,10 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmDescription: !Sub 'Alarm if an error occurs in APILambda (${Environment})'
-      Namespace: 'AWS/Lambda'
-      MetricName: Errors
+      Namespace: 'AWS/States'
+      MetricName: LambdaFunctionsFailed
       Dimensions:
-        - Name: FunctionName
+        - Name: LambdaFunctionArn
           Value: !Ref APILambda
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: ignore
