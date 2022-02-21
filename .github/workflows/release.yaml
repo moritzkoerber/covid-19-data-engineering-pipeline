@@ -27,6 +27,3 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GithubOIDCRole
           aws-region: eu-central-1
-
-      - run: |
-          echo ${{ secrets.AWS_ACCOUNT_ID }}
