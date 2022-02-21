@@ -15,12 +15,17 @@ repos:
   hooks:
     - id: black
 
+- repo: https://github.com/asottile/seed-isort-config
+  rev: v2.2.0
+  hooks:
+    - id: seed-isort-config
+
 - repo: https://github.com/pycqa/isort
   rev: 5.10.1
   hooks:
     - id: isort
 
-- repo: https://github.com/PyCQA/autoflake
+- repo: https://github.com/pycqa/autoflake
   rev: v1.4
   hooks:
     - id: autoflake
@@ -38,7 +43,7 @@ repos:
       files: ops/stack/.*.yaml$
 
 - repo: https://github.com/sirosen/check-jsonschema
-  rev: 0.11.0
+  rev: 0.13.0
   hooks:
     - id: check-github-workflows
     - id: check-github-actions
