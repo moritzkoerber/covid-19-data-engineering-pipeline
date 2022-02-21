@@ -1,7 +1,11 @@
 name: Create release
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number, e.g. "v32"'
+        required: true
 
 env:
   PYTHON_VERSION: '3.8.2'
