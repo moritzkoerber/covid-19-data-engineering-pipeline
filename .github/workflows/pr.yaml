@@ -34,9 +34,5 @@ jobs:
 
       - name: Create environment
         run: |
-          pip install pipenv
-          pip install `pipenv lock --dev -r | grep pre-commit | xargs`
-
-      - name: Run pre-commit
-        run: |
+          pip install pre-commit
           pre-commit run --all-files
