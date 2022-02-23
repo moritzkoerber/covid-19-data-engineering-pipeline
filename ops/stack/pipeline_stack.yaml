@@ -29,10 +29,10 @@ Resources:
     Properties:
       BucketName: !Sub 'data-pipeline-s3-bucket-${Environment}'
       PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
       AccessControl: Private
       NotificationConfiguration:
         LambdaConfigurations:
@@ -243,6 +243,7 @@ Resources:
         APILambda: !GetAtt APILambda.Arn
       LoggingConfiguration:
         Level: ERROR
+        IncludeExecutionData: True
         Destinations:
           - CloudWatchLogsLogGroup:
               LogGroupArn: !GetAtt StateMachineLogGroup.Arn
@@ -289,7 +290,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - logs:*
-                Resource: !GetAtt StateMachineLogGroup.Arn
+                Resource: '*'
 
   APILambdaAlarm:
     Type: AWS::CloudWatch::Alarm
