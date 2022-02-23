@@ -1,0 +1,47 @@
+name: Create release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'For example "v2"'
+        required: true
+
+env:
+  PYTHON_VERSION: '3.8.2'
+  PIPENV_VENV_IN_PROJECT: '1'
+
+jobs:
+  auth:
+    name: auth
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+    strategy:
+      matrix:
+        container: ["api_lambda", "ge_lambda"]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GithubOIDCRole
+          aws-region: eu-central-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: ops/container/api_lambda
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/api_lambda:${{ github.event.inputs.version }}
