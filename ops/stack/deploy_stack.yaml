@@ -15,3 +15,15 @@ Resources:
             Condition:
               StringLike:
                 token.actions.githubusercontent.com:sub: repo:moritzkoerber/data-engineering:*
+      Path: /
+      Policies:
+        - PolicyName: ECRAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecr:*
+                Resource:
+                  - !Sub 'arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/api_lambda'
+                  - !Sub 'arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/ge_lambda'
