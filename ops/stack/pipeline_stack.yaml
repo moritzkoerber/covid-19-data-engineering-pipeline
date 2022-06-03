@@ -30,6 +30,12 @@ Resources:
     DependsOn: GELambdaInvokePermission
     Properties:
       BucketName: !Sub 'data-pipeline-s3-bucket-${Environment}'
+      LifecycleConfiguration:
+        Rules:
+          - Id: Delete processed data
+            ExpirationInDays: 30
+            Prefix: data/vaccinations/valid/
+            Status: Enabled
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -355,7 +361,6 @@ Resources:
                   - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog'
                   - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/api_data_${Environment}'
                   - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/api_data_${Environment}/*'
-
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
@@ -370,6 +375,7 @@ Resources:
         - Arn: !GetAtt LambdasStateMachine.Arn
           Id: !Sub 'APILambda-state-machine-${Environment}'
           RoleArn: !GetAtt DailyAPIStateMachineTriggerRole.Arn
+      State: DISABLED
 
   DailyAPIStateMachineTriggerRole:
     Type: AWS::IAM::Role
