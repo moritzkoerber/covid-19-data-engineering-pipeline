@@ -1,7 +1,7 @@
 ---
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.2.0
+    rev: v4.3.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -12,7 +12,7 @@ repos:
           - --unsafe
 
   - repo: https://github.com/psf/black
-    rev: 22.3.0
+    rev: 22.6.0
     hooks:
       - id: black
 
@@ -34,13 +34,13 @@ repos:
         additional_dependencies: [flake8-bugbear, pep8-naming]
 
   - repo: https://github.com/aws-cloudformation/cfn-lint
-    rev: v0.59.0
+    rev: v0.61.2
     hooks:
       - id: cfn-python-lint
         files: ops/stack/.*.yaml$
 
   - repo: https://github.com/sirosen/check-jsonschema
-    rev: 0.14.3
+    rev: 0.17.0
     hooks:
       - id: check-github-workflows
       - id: check-github-actions
@@ -51,7 +51,7 @@ repos:
       - id: bandit
 
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.26.3
+    rev: v1.27.1
     hooks:
       - id: yamllint
         args: [--format, parsable, --strict]
