@@ -274,6 +274,17 @@ Resources:
       OKActions:
         - !ImportValue CloudWatchAlarmSNSTopic
 
+  LambdaLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      LayerName: !Sub 'data-pipeline-csse-lambda-layer-${Version}'
+      Description: !Sub 'CSSEGISandData Lambda ${Version}'
+      Content:
+        S3Bucket: !Sub ['s3://${bucket}', bucket: !ImportValue LambdaLayerS3Bucket]
+        S3Key: !Sub '/data-pipeline/CSSEGISandData/lambda_layer_${Version}.zip'
+      CompatibleRuntimes:
+        - python3.9
+
   GELambda:
     Type: AWS::Lambda::Function
     Properties:
