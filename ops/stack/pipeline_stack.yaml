@@ -36,6 +36,14 @@ Resources:
             ExpirationInDays: 30
             Prefix: data/vaccinations/valid/
             Status: Enabled
+          - Id: Delete validations
+            ExpirationInDays: 30
+            Prefix: validations/exp_suite/
+            Status: Enabled
+          - Id: Delete logs
+            ExpirationInDays: 30
+            Prefix: logs/cloudtrail/AWSLogs/820381935377/CloudTrail/eu-central-1/
+            Status: Enabled
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -157,7 +165,7 @@ Resources:
       Environment:
         Variables:
           API_URL: https://api.corona-zahlen.org/germany
-          S3_BUCKET: !Sub 's3://${APIS3Bucket}/data/vaccinations/raw'
+          S3_BUCKET: !Sub 's3://${APIS3Bucket}'
           REPOSITORY_PATH: https://api.github.com/repos/CSSEGISandData/COVID-19/contents/csse_covid_19_data/csse_covid_19_time_series
           ENVIRONMENT: !Ref Environment
       Tags:
@@ -212,6 +220,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub 'state-machine-log-group-${Environment}'
+      RetentionInDays: 14
       Tags:
         - Key: Stack
           Value: !Ref AWS::StackName
