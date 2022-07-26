@@ -15,7 +15,7 @@ Resources:
               Federated: !Sub 'arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com'
             Condition:
               StringLike:
-                token.actions.githubusercontent.com:sub: repo:moritzkoerber/data-engineering:*
+                token.actions.githubusercontent.com:sub: repo:moritzkoerber/covid-19-data-engineering-pipeline:*
       Path: /
       Policies:
         - PolicyName: Access
@@ -32,6 +32,12 @@ Resources:
                 Resource:
                   - !Sub 'arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/api_lambda'
                   - !Sub 'arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/ge_lambda'
+              - Effect: Allow
+                Action:
+                  - s3:*
+                Resource:
+                  - 'arn:aws:s3:::data-pipeline-lambda-layers'
+                  - 'arn:aws:s3:::data-pipeline-lambda-layers/data-pipeline/CSSEGISandData/*'
               - Effect: Allow
                 Action:
                   - cloudformation:*
