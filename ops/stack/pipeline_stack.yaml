@@ -180,7 +180,9 @@ Resources:
       Layers:
         - !Ref LambdaLayer
       Handler: handler.handler
-      CodeUri: !Sub 's3://data-pipeline-s3-bucket-${Environment}/scripts/cssegi_handler_${Version}.zip'
+      CodeUri:
+        Bucket: !Sub 'data-pipeline-s3-bucket-${Environment}'
+        Key: !Sub 'scripts/cssegi_handler_${Version}.zip'
       EventInvokeConfig:
         MaximumRetryAttempts: 2
         DestinationConfig:
