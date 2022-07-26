@@ -21,7 +21,7 @@ on:
 concurrency: ${{ github.event.inputs.environment }}
 
 env:
-  PYTHON_VERSION: 3.8.2
+  PYTHON_VERSION: 3.9.13
   PIPENV_VENV_IN_PROJECT: '1'
 
 jobs:
@@ -44,11 +44,19 @@ jobs:
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GithubOIDCRole
           aws-region: eu-central-1
 
+      - name: build lambda layer
+        run: |
+          pip install --no-cache-dir -r ops/layers/CSSEGISandData/requirements.txt --target lambda_layer/python
+          pushd lambda_layer
+          zip -r ../lambda_layer_${{ github.event.inputs.stack_version }}.zip .
+          popd
+          aws s3 cp lambda_layer_${{ github.event.inputs.stack_version }}.zip s3://data-pipeline-lambda-layers/data-pipeline/CSSEGISandData/lambda_layer_${{ github.event.inputs.stack_version }}.zip
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build and push
+      - name: Build and push docker container
         uses: docker/build-push-action@v2
         if: contains(github.event.inputs.docker_version_tag, 'v')
         with:
