@@ -38,6 +38,8 @@ Resources:
                 Resource:
                   - 'arn:aws:s3:::data-pipeline-lambda-layers'
                   - 'arn:aws:s3:::data-pipeline-lambda-layers/data-pipeline/CSSEGISandData/*'
+                  - 'arn:aws:s3:::data-pipeline-s3-bucket-staging/scripts/*'
+                  - 'arn:aws:s3:::data-pipeline-s3-bucket-production/scripts/*'
               - Effect: Allow
                 Action:
                   - cloudformation:*
