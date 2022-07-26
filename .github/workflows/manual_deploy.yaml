@@ -26,7 +26,7 @@ env:
 
 jobs:
   build_and_push_docker_containers:
-    name: Build and push docker containers
+    name: Build and push lambda layer + docker containers
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -44,7 +44,12 @@ jobs:
           role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GithubOIDCRole
           aws-region: eu-central-1
 
-      - name: build lambda layer
+      - name: upload handler
+        run: |
+          zip -j cssegi_handler_${{ github.event.inputs.stack_version }}.zip src/pipeline/api_queries/CSSEGI/handler.py
+          aws s3 cp cssegi_handler_${{ github.event.inputs.stack_version }}.zip s3://data-pipeline-s3-bucket-production/scripts/cssegi_handler_${{ github.event.inputs.stack_version }}.zip
+
+      - name: Build lambda layer
         run: |
           pip install --no-cache-dir -r ops/layers/CSSEGISandData/requirements.txt --target lambda_layer/python
           pushd lambda_layer
