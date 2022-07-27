@@ -182,7 +182,7 @@ Resources:
       Handler: handler.handler
       CodeUri:
         Bucket: !Sub 'data-pipeline-s3-bucket-${Environment}'
-        Key: !Sub 'scripts/cssegi_handler_${Version}.zip'
+        Key: !Sub '/scripts/cssegi_handler_${Version}.zip'
       EventInvokeConfig:
         MaximumRetryAttempts: 2
         DestinationConfig:
