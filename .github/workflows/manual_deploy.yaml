@@ -54,6 +54,9 @@ jobs:
           -x '*/botocore/*' \
           -x '*__pycache__*'
           popd
+
+      - name: Push lambda layer
+        run: |
           aws s3 cp lambda_layer_${{ github.event.inputs.stack_version }}.zip s3://data-pipeline-lambda-layers/data-pipeline/CSSEGISandData/lambda_layer_${{ github.event.inputs.stack_version }}.zip
 
   build_and_push_docker_containers:

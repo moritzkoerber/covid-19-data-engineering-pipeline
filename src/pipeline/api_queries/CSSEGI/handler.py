@@ -20,7 +20,7 @@ table_names = ["deaths_global"]
 def handler(event, context):
     for file_name, table_name in zip(file_names, table_names):
         file = requests.get(f"{_REPOSITORY_PATH}/{file_name}")
-        file_obj = io.StringIO(base64.b64decode(file.json()["content"]).decode("utf-8"))
+        file_obj = io.StringIO(base64.b64decode(file.json()["content"]).decode("ascii"))
 
         pandas_df = (
             pd.read_csv(file_obj)
