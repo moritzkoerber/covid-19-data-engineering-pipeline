@@ -179,6 +179,7 @@ Resources:
     Properties:
       Layers:
         - !Ref LambdaLayer
+        - 'arn:aws:lambda:eu-central-1:336392948345:layer:AWSDataWrangler-Python39:7'
       Handler: handler.handler
       CodeUri:
         Bucket: !Ref APIS3Bucket
