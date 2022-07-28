@@ -30,14 +30,13 @@ Resources:
                 Action:
                   - ecr:*
                 Resource:
-                  - !Sub 'arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/api_lambda'
-                  - !Sub 'arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/ge_lambda'
+                  - !Sub 'arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/*'
               - Effect: Allow
                 Action:
                   - s3:*
                 Resource:
                   - 'arn:aws:s3:::data-pipeline-lambda-layers'
-                  - 'arn:aws:s3:::data-pipeline-lambda-layers/data-pipeline/CSSEGISandData/*'
+                  - 'arn:aws:s3:::data-pipeline-lambda-layers/*'
                   - 'arn:aws:s3:::data-pipeline-s3-bucket-staging/scripts/*'
                   - 'arn:aws:s3:::data-pipeline-s3-bucket-production/scripts/*'
               - Effect: Allow
@@ -45,6 +44,7 @@ Resources:
                   - cloudformation:*
                 Resource:
                   - !Sub 'arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/*'
+                  - !Sub 'arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31'
               - Effect: Allow
                 Action:
                   - s3:*
