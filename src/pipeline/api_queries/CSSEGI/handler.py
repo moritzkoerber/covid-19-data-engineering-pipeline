@@ -4,7 +4,6 @@ import os
 
 import awswrangler as awr
 import pandas as pd
-import pycountry
 import requests
 
 _S3_BUCKET = os.environ["S3_BUCKET"]
@@ -12,7 +11,7 @@ _REPOSITORY_PATH = os.environ["REPOSITORY_PATH"]
 _ENVIRONMENT = os.environ["ENVIRONMENT"]
 
 _now = pd.Timestamp.utcnow()
-countries = [e.name for e in list(pycountry.countries)]
+# countries = [e.name for e in list(pycountry.countries)]
 file_names = ["time_series_covid19_deaths_global.csv"]
 table_names = ["deaths_global"]
 
@@ -25,7 +24,7 @@ def handler(event, context):
         pandas_df = (
             pd.read_csv(file_obj)
             .drop(columns=["Province/State", "Lat", "Long"])
-            .query("`Country/Region` in @countries")
+            # .query("`Country/Region` in @countries")
             .melt(id_vars=["Country/Region"], var_name="date", value_name="cases")
             .assign(
                 date=lambda x: pd.to_datetime(x["date"], format="%m/%d/%y"),
