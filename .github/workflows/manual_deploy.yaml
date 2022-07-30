@@ -48,6 +48,7 @@ jobs:
 
       - name: Build lambda layer
         run: |
+          pip install -U pip setuptools wheel
           pip install --no-cache-dir -r ops/layers/CSSEGISandData/requirements.txt --target lambda_layer/python
           pushd lambda_layer
           zip -r ../lambda_layer_${{ github.event.inputs.stack_version }}.zip . \

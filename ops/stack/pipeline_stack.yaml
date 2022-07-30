@@ -299,13 +299,16 @@ Resources:
         - !ImportValue CloudWatchAlarmSNSTopic
 
   LambdaLayer:
-    Type: AWS::Lambda::LayerVersion
+    Type: AWS::Serverless::LayerVersion
     Properties:
+      RetentionPolicy: Delete
+      CompatibleArchitectures:
+        - x86_64
       LayerName: !Sub 'data-pipeline-csse-lambda-layer-${Version}'
       Description: !Sub 'CSSEGISandData Lambda ${Version}'
-      Content:
-        S3Bucket: !ImportValue LambdaLayerS3Bucket
-        S3Key: !Sub 'data-pipeline/CSSEGISandData/lambda_layer_${Version}.zip'
+      ContentUri:
+        Bucket: !ImportValue LambdaLayerS3Bucket
+        Key: !Sub 'data-pipeline/CSSEGISandData/lambda_layer_${Version}.zip'
       CompatibleRuntimes:
         - python3.9
 

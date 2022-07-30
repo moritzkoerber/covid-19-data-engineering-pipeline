@@ -1,3 +1,4 @@
-requests==2.27.
-pandas==1.4.2
-awswrangler==2.15.0
+requests~=2.28.1
+pandas~=1.4.3
+awswrangler~=2.16.1
+numpy ~=1.23.0
