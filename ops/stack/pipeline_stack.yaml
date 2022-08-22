@@ -1,5 +1,6 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
 Description: Data Engineering Pipeline Stack
 
 Parameters:
@@ -151,7 +152,6 @@ Resources:
   APILambda:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub 'api-data-lambda-${Environment}'
       Code:
         ImageUri: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/api_lambda-${Environment}:${Version}'
       ImageConfig:
@@ -159,15 +159,13 @@ Resources:
           - handler.handler
       Description: Lambda for covid api calls
       Timeout: 300
-      MemorySize: 512
+      MemorySize: 256
       PackageType: Image
       Role: !GetAtt LambdaRole.Arn
       Environment:
         Variables:
           API_URL: https://api.corona-zahlen.org/germany
           S3_BUCKET: !Sub 's3://${APIS3Bucket}'
-          REPOSITORY_PATH: https://api.github.com/repos/CSSEGISandData/COVID-19/contents/csse_covid_19_data/csse_covid_19_time_series
-          ENVIRONMENT: !Ref Environment
       Tags:
         - Key: Stack
           Value: !Ref AWS::StackName
@@ -175,6 +173,32 @@ Resources:
           Value: !Ref Environment
         - Key: Name
           Value: ApiPipeline
+
+  CSSEGISandDataLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Layers:
+        - !Ref LambdaLayer
+      Handler: handler.handler
+      CodeUri:
+        Bucket: !Ref APIS3Bucket
+        Key: !Sub 'scripts/cssegi_handler_${Version}.zip'
+      EventInvokeConfig:
+        MaximumRetryAttempts: 2
+        DestinationConfig:
+          OnFailure:
+            Type: EventBridge
+            Destination: !Sub 'arn:aws:events:${AWS::Region}:${AWS::AccountId}:event-bus/default'
+      Runtime: python3.9
+      Description: Lambda for CSSEGI api calls
+      Timeout: 300
+      MemorySize: 256
+      Role: !GetAtt LambdaRole.Arn
+      Environment:
+        Variables:
+          REPOSITORY_PATH: 'https://api.github.com/repos/CSSEGISandData/COVID-19/contents/csse_covid_19_data/csse_covid_19_time_series'
+          ENVIRONMENT: !Ref Environment
+          S3_BUCKET: !Sub 's3://${APIS3Bucket}'
 
   LambdasStateMachine:
     Type: AWS::StepFunctions::StateMachine
@@ -274,10 +298,23 @@ Resources:
       OKActions:
         - !ImportValue CloudWatchAlarmSNSTopic
 
+  LambdaLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      RetentionPolicy: Delete
+      CompatibleArchitectures:
+        - x86_64
+      LayerName: !Sub 'data-pipeline-csse-lambda-layer-${Version}'
+      Description: !Sub 'CSSEGISandData Lambda ${Version}'
+      ContentUri:
+        Bucket: !ImportValue LambdaLayerS3Bucket
+        Key: !Sub 'data-pipeline/CSSEGISandData/lambda_layer_${Version}.zip'
+      CompatibleRuntimes:
+        - python3.9
+
   GELambda:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub 'api-data-ge-lambda-${Environment}'
       Code:
         ImageUri: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ge_lambda-${Environment}:${Version}'
       ImageConfig:
@@ -285,7 +322,7 @@ Resources:
           - handler.handler
       Description: Lambda to run great expectations on data
       Timeout: 600
-      MemorySize: 512
+      MemorySize: 256
       PackageType: Image
       Role: !GetAtt LambdaRole.Arn
       Environment:
@@ -370,6 +407,13 @@ Resources:
                   - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog'
                   - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/api_data_${Environment}'
                   - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/api_data_${Environment}/*'
+        - PolicyName: EventBridgeAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: events:PutEvents
+                Resource: '*'
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 

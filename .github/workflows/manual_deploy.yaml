@@ -21,13 +21,49 @@ on:
 concurrency: ${{ github.event.inputs.environment }}
 
 env:
-  PYTHON_VERSION: 3.8.2
+  PYTHON_VERSION: 3.9.13
   PIPENV_VENV_IN_PROJECT: '1'
 
 jobs:
+  build_and_push_lambda_layers:
+    name: Build and push lambda layer + handler
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Get AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GithubOIDCRole
+          aws-region: eu-central-1
+
+      - name: upload handler
+        run: |
+          zip -j cssegi_handler_${{ github.event.inputs.stack_version }}.zip src/pipeline/api_queries/CSSEGI/handler.py
+          aws s3 cp cssegi_handler_${{ github.event.inputs.stack_version }}.zip s3://data-pipeline-s3-bucket-${{ github.event.inputs.environment }}/scripts/cssegi_handler_${{ github.event.inputs.stack_version }}.zip
+
+      - name: Build lambda layer
+        run: |
+          pip install -r ops/layers/CSSEGISandData/requirements.txt --target lambda_layer/python
+          pushd lambda_layer
+          zip -r ../lambda_layer_${{ github.event.inputs.stack_version }}.zip . \
+          -x '*/boto3/*' \
+          -x '*/botocore/*' \
+          -x '*__pycache__*'
+          popd
+
+      - name: Push lambda layer
+        run: |
+          aws s3 cp lambda_layer_${{ github.event.inputs.stack_version }}.zip s3://data-pipeline-lambda-layers/data-pipeline/CSSEGISandData/lambda_layer_${{ github.event.inputs.stack_version }}.zip
+
   build_and_push_docker_containers:
     name: Build and push docker containers
     runs-on: ubuntu-latest
+    needs: build_and_push_lambda_layers
     permissions:
       id-token: write
       contents: write
@@ -48,8 +84,11 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build and push
-        uses: docker/build-push-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push docker container
+        uses: docker/build-push-action@v3
         if: contains(github.event.inputs.docker_version_tag, 'v')
         with:
           context: ops/container/${{ matrix.lambda_name }}
