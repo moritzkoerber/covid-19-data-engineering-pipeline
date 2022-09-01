@@ -7,3 +7,6 @@ rules:
   indentation:
     spaces: 2
   line-length: disable
+  brackets:
+    forbid: false
+    max-spaces-inside: 1
