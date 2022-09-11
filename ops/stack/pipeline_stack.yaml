@@ -35,7 +35,7 @@ Resources:
         Rules:
           - Id: Delete processed data
             ExpirationInDays: 30
-            Prefix: data/vaccinations/valid/
+            Prefix: data/rki/valid/
             Status: Enabled
           - Id: Delete validations
             ExpirationInDays: 30
@@ -59,7 +59,7 @@ Resources:
               S3Key:
                 Rules:
                   - Name: prefix
-                    Value: data/vaccinations/raw/
+                    Value: data/rki/raw/germany
       Tags:
         - Key: Stack
           Value: !Ref AWS::StackName
@@ -117,7 +117,7 @@ Resources:
         DeleteBehavior: DELETE_FROM_DATABASE
       Targets:
         S3Targets:
-          - Path: !Sub 's3://${APIS3Bucket}/data/vaccinations/processed/'
+          - Path: !Sub 's3://${APIS3Bucket}/data/rki/processed/germany'
       Configuration: '{"Version":1.0,"CrawlerOutput":{"Partitions":{"AddOrUpdateBehavior":"InheritFromTable"}}}'
       Tags:
         Stack: !Ref AWS::StackName
@@ -164,7 +164,7 @@ Resources:
       Role: !GetAtt LambdaRole.Arn
       Environment:
         Variables:
-          API_URL: https://api.corona-zahlen.org/germany
+          API_URL: https://api.corona-zahlen.org
           S3_BUCKET: !Sub 's3://${APIS3Bucket}'
       Tags:
         - Key: Stack
@@ -328,10 +328,10 @@ Resources:
       Environment:
         Variables:
           S3_BUCKET: !Sub 'data-pipeline-s3-bucket-${Environment}'
-          S3_FOLDER: data/vaccinations
+          S3_FOLDER: data/rki
           S3_FOLDER_SUCCESS: valid
           S3_FOLDER_FAILURE: rejected
-          DATASOURCE: vaccinations
+          DATASOURCE: germany
           CHECKPOINT: checkpoint
       Tags:
         - Key: Stack
@@ -488,8 +488,8 @@ Resources:
       GlueVersion: '3.0'
       DefaultArguments:
         --bucket: !Ref APIS3Bucket
-        --prefix: data/vaccinations/valid/
-        --write_location: data/vaccinations/processed/
+        --prefix: data/rki/valid/germany/
+        --write_location: data/rki/processed/germany/
       NumberOfWorkers: 2
       Name: !Sub 'data-processing-glue-job-${Environment}'
       WorkerType: Standard
@@ -555,7 +555,7 @@ Resources:
         - DataResources:
             - Type: AWS::S3::Object
               Values:
-                - !Sub 'arn:aws:s3:::${APIS3Bucket}/data/vaccinations/valid/'
+                - !Sub 'arn:aws:s3:::${APIS3Bucket}/data/rki/valid/'
           IncludeManagementEvents: false
           ReadWriteType: WriteOnly
       Tags:
@@ -587,7 +587,7 @@ Resources:
             bucketName:
               - !Ref APIS3Bucket
             key:
-              - prefix: data/vaccinations/valid/
+              - prefix: data/rki/valid/
       State: ENABLED
       Targets:
         - Arn: !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:workflow/${APIGlueProcessingWorkflow}'
