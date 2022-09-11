@@ -5,12 +5,14 @@ name = "pypi"
 
 [packages]
 boto3 = "*"
-pandas = "*"
+pandas = "==1.4.4"
 requests = "*"
 pyspark = "*"
-awswrangler = "*"
-pyarrow = "*"
+awswrangler = "==2.17.0"
+pyarrow = "==8.0.0"
 pycountry = "*"
+apache-airflow = "==2.4.1"
+great_expectations = "~=0.14.13"
 
 [dev-packages]
 pre-commit = "*"
