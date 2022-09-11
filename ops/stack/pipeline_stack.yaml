@@ -174,7 +174,7 @@ Resources:
         - Key: Name
           Value: ApiPipeline
 
-  CSSEGISandDataLambda:
+  CSSELambda:
     Type: AWS::Serverless::Function
     Properties:
       Layers:
@@ -182,7 +182,7 @@ Resources:
       Handler: handler.handler
       CodeUri:
         Bucket: !Ref APIS3Bucket
-        Key: !Sub 'scripts/cssegi_handler_${Version}.zip'
+        Key: !Sub 'scripts/csse_handler_${Version}.zip'
       EventInvokeConfig:
         MaximumRetryAttempts: 2
         DestinationConfig:
@@ -190,7 +190,7 @@ Resources:
             Type: EventBridge
             Destination: !Sub 'arn:aws:events:${AWS::Region}:${AWS::AccountId}:event-bus/default'
       Runtime: python3.9
-      Description: Lambda for CSSEGI api calls
+      Description: Lambda for CSSE api calls
       Timeout: 300
       MemorySize: 256
       Role: !GetAtt LambdaRole.Arn
@@ -305,10 +305,10 @@ Resources:
       CompatibleArchitectures:
         - x86_64
       LayerName: !Sub 'data-pipeline-csse-lambda-layer-${Version}'
-      Description: !Sub 'CSSEGISandData Lambda ${Version}'
+      Description: !Sub 'CSSE Lambda ${Version}'
       ContentUri:
         Bucket: !ImportValue LambdaLayerS3Bucket
-        Key: !Sub 'data-pipeline/CSSEGISandData/lambda_layer_${Version}.zip'
+        Key: !Sub 'data-pipeline/csse/lambda_layer_${Version}.zip'
       CompatibleRuntimes:
         - python3.9
 
