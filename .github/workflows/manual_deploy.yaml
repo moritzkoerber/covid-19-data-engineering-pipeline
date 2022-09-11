@@ -43,12 +43,12 @@ jobs:
 
       - name: upload handler
         run: |
-          zip -j cssegi_handler_${{ github.event.inputs.stack_version }}.zip src/pipeline/api_queries/CSSEGI/handler.py
-          aws s3 cp cssegi_handler_${{ github.event.inputs.stack_version }}.zip s3://data-pipeline-s3-bucket-${{ github.event.inputs.environment }}/scripts/cssegi_handler_${{ github.event.inputs.stack_version }}.zip
+          zip -j csse_handler_${{ github.event.inputs.stack_version }}.zip src/pipeline/api_queries/csse/handler.py
+          aws s3 cp csse_handler_${{ github.event.inputs.stack_version }}.zip s3://data-pipeline-s3-bucket-${{ github.event.inputs.environment }}/scripts/csse_handler_${{ github.event.inputs.stack_version }}.zip
 
       - name: Build lambda layer
         run: |
-          pip install -r ops/layers/CSSEGISandData/requirements.txt --target lambda_layer/python
+          pip install -r ops/layers/csse/requirements.txt --target lambda_layer/python
           pushd lambda_layer
           zip -r ../lambda_layer_${{ github.event.inputs.stack_version }}.zip . \
           -x '*/boto3/*' \
@@ -58,7 +58,7 @@ jobs:
 
       - name: Push lambda layer
         run: |
-          aws s3 cp lambda_layer_${{ github.event.inputs.stack_version }}.zip s3://data-pipeline-lambda-layers/data-pipeline/CSSEGISandData/lambda_layer_${{ github.event.inputs.stack_version }}.zip
+          aws s3 cp lambda_layer_${{ github.event.inputs.stack_version }}.zip s3://data-pipeline-lambda-layers/data-pipeline/csse/lambda_layer_${{ github.event.inputs.stack_version }}.zip
 
   build_and_push_docker_containers:
     name: Build and push docker containers
