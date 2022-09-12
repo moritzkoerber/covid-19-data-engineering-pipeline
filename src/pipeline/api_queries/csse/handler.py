@@ -43,9 +43,9 @@ def handler(event, context):
 
         awr.s3.to_parquet(
             pandas_df,
-            f"{_S3_BUCKET}/data/{data_type}/global/",
+            f"{_S3_BUCKET}/data/csse/{data_type}/global/",
             schema_evolution=False,
-            database=f"api_data_{_ENVIRONMENT}",
+            database=f"csse_{_ENVIRONMENT}",
             table=f"{data_type}_global",
             mode="overwrite_partitions",
             sanitize_columns=True,

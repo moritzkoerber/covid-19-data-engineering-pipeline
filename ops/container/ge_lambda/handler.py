@@ -61,10 +61,10 @@ def handler(event, context):
             "s3_data_connector": {
                 "class_name": "InferredAssetS3DataConnector",
                 "bucket": f"{_S3_BUCKET}",
-                "prefix": f"{_S3_FOLDER}/raw",
+                "prefix": f"{_S3_FOLDER}/raw/germany",
                 "default_regex": {
                     "group_names": ["data_asset_name"],
-                    "pattern": rf"{_S3_FOLDER}/raw/(\d{{4}}-\d{{2}}-\d{{2}})\.parquet",
+                    "pattern": rf"{_S3_FOLDER}/raw/germany/(\d{{4}}-\d{{2}}-\d{{2}})\.parquet",
                 },
             },
         },
@@ -115,16 +115,16 @@ def handler(event, context):
         if results["success"]:
             move_file(
                 source_bucket=_S3_BUCKET,
-                source=f"{_S3_BUCKET}/{_S3_FOLDER}/raw/{i}.parquet",
-                copy_key=f"{_S3_FOLDER}/{_S3_FOLDER_SUCCESS}/{i}.parquet",
-                delete_key=f"{_S3_FOLDER}/raw/{i}.parquet",
+                source=f"{_S3_BUCKET}/{_S3_FOLDER}/raw/germany/{i}.parquet",
+                copy_key=f"{_S3_FOLDER}/{_S3_FOLDER_SUCCESS}/germany/{i}.parquet",
+                delete_key=f"{_S3_FOLDER}/raw/germany/{i}.parquet",
             )
 
         else:
             move_file(
                 source_bucket=_S3_BUCKET,
-                source=f"{_S3_BUCKET}/{_S3_FOLDER}/raw/{i}.parquet",
-                copy_key=f"{_S3_FOLDER}/{_S3_FOLDER_FAILURE}/{i}.parquet",
-                delete_key=f"{_S3_FOLDER}/raw/{i}.parquet",
+                source=f"{_S3_BUCKET}/{_S3_FOLDER}/raw/germany/{i}.parquet",
+                copy_key=f"{_S3_FOLDER}/{_S3_FOLDER_FAILURE}/germany/{i}.parquet",
+                delete_key=f"{_S3_FOLDER}/raw/germany/{i}.parquet",
             )
             raise Exception("Error: Data validation not successful")
