@@ -43,7 +43,7 @@ Resources:
             Status: Enabled
           - Id: Delete logs
             ExpirationInDays: 30
-            Prefix: logs/cloudtrail/AWSLogs/820381935377/CloudTrail/eu-central-1/
+            Prefix: !Sub 'logs/cloudtrail/AWSLogs/${AWS::AccountId}/CloudTrail/${AWS::Region}/'
             Status: Enabled
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
@@ -59,7 +59,7 @@ Resources:
               S3Key:
                 Rules:
                   - Name: prefix
-                    Value: data/rki/raw/germany
+                    Value: data/rki/raw/germany/cases
       Tags:
         - Key: Stack
           Value: !Ref AWS::StackName
@@ -117,7 +117,7 @@ Resources:
         DeleteBehavior: DELETE_FROM_DATABASE
       Targets:
         S3Targets:
-          - Path: !Sub 's3://${APIS3Bucket}/data/rki/processed/germany'
+          - Path: !Sub 's3://${APIS3Bucket}/data/rki/processed/germany/cases'
       Configuration: '{"Version":1.0,"CrawlerOutput":{"Partitions":{"AddOrUpdateBehavior":"InheritFromTable"}}}'
       Tags:
         Stack: !Ref AWS::StackName
@@ -428,7 +428,7 @@ Resources:
         - Arn: !GetAtt LambdasStateMachine.Arn
           Id: !Sub 'APILambda-state-machine-${Environment}'
           RoleArn: !GetAtt DailyAPIStateMachineTriggerRole.Arn
-      State: DISABLED
+      State: ENABLED
 
   DailyAPIStateMachineTriggerRole:
     Type: AWS::IAM::Role
@@ -488,8 +488,8 @@ Resources:
       GlueVersion: '3.0'
       DefaultArguments:
         --bucket: !Ref APIS3Bucket
-        --prefix: data/rki/valid/germany/
-        --write_location: data/rki/processed/germany/
+        --prefix: data/rki/valid/germany/cases
+        --write_location: data/rki/processed/germany/cases
       NumberOfWorkers: 2
       Name: !Sub 'data-processing-glue-job-${Environment}'
       WorkerType: Standard
@@ -555,7 +555,7 @@ Resources:
         - DataResources:
             - Type: AWS::S3::Object
               Values:
-                - !Sub 'arn:aws:s3:::${APIS3Bucket}/data/rki/valid/'
+                - !Sub 'arn:aws:s3:::${APIS3Bucket}/data/rki/valid/germany/cases'
           IncludeManagementEvents: false
           ReadWriteType: WriteOnly
       Tags:
@@ -587,7 +587,7 @@ Resources:
             bucketName:
               - !Ref APIS3Bucket
             key:
-              - prefix: data/rki/valid/
+              - prefix: data/rki/valid/germany/cases
       State: ENABLED
       Targets:
         - Arn: !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:workflow/${APIGlueProcessingWorkflow}'

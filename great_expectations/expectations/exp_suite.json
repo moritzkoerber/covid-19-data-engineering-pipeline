@@ -29,7 +29,8 @@
           "meta.contact",
           "meta.info",
           "meta.lastUpdate",
-          "meta.lastCheckedForUpdate"
+          "meta.lastCheckedForUpdate",
+          "api_call_ts_utc"
         ]
       },
       "meta": {}
