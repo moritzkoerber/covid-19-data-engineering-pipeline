@@ -78,7 +78,11 @@ def handler(event, context):
 
     s3_client = boto3.client("s3")
 
-    def move_file(source_bucket: str, source: str, copy_key: str, delete_key: str):
+    def move_file(
+        source_bucket: str, source: str, copy_key: str, delete_key: str = None
+    ):
+        if delete_key is None:
+            delete_key = source
         s3_client.copy_object(
             Bucket=source_bucket,
             CopySource=source,
@@ -111,20 +115,19 @@ def handler(event, context):
         results = context.run_checkpoint(checkpoint_name=_CHECKPOINT)
 
         print(results)
+        source_key = f"{_S3_BUCKET}/{_S3_FOLDER}/raw/germany/{i}.parquet"
 
         if results["success"]:
             move_file(
                 source_bucket=_S3_BUCKET,
-                source=f"{_S3_BUCKET}/{_S3_FOLDER}/raw/germany/{i}.parquet",
+                source=source_key,
                 copy_key=f"{_S3_FOLDER}/{_S3_FOLDER_SUCCESS}/germany/{i}.parquet",
-                delete_key=f"{_S3_FOLDER}/raw/germany/{i}.parquet",
             )
 
         else:
             move_file(
                 source_bucket=_S3_BUCKET,
-                source=f"{_S3_BUCKET}/{_S3_FOLDER}/raw/germany/{i}.parquet",
+                source=source_key,
                 copy_key=f"{_S3_FOLDER}/{_S3_FOLDER_FAILURE}/germany/{i}.parquet",
-                delete_key=f"{_S3_FOLDER}/raw/germany/{i}.parquet",
             )
             raise Exception("Error: Data validation not successful")
