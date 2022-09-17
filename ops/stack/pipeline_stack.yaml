@@ -17,11 +17,11 @@ Mappings:
   Environments:
     staging:
       DailyAPILambdaSchedule: cron(0 7 ? * * *)
+      DailyCSSELambdaSchedule: cron(15 7 ? * * *)
     production:
       DailyAPILambdaSchedule: cron(0 8 ? * * *)
+      DailyCSSELambdaSchedule: cron(15 8 ? * * *)
 
-Conditions:
-  IsProduction: !Equals [!Ref Environment, production]
 
 Resources:
   APIS3Bucket:
@@ -194,6 +194,11 @@ Resources:
       Timeout: 300
       MemorySize: 256
       Role: !GetAtt LambdaRole.Arn
+      Events:
+        Schedule:
+          Type: Schedule
+          Properties:
+            Schedule: !FindInMap [Environments, !Ref Environment, DailyCSSELambdaSchedule]
       Environment:
         Variables:
           REPOSITORY_PATH: 'https://api.github.com/repos/CSSEGISandData/COVID-19/contents/csse_covid_19_data/csse_covid_19_time_series'
@@ -419,7 +424,6 @@ Resources:
 
   DailyAPIStateMachineTrigger:
     Type: AWS::Events::Rule
-    Condition: IsProduction
     Properties:
       Description: Trigger APILambda State Machine
       Name: !Sub 'api-data-state-machine-trigger-${Environment}'
@@ -453,7 +457,6 @@ Resources:
 
   DailyAPIStateMachineTriggerPermission:
     Type: AWS::Lambda::Permission
-    Condition: IsProduction
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !Ref APILambda

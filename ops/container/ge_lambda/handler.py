@@ -1,8 +1,11 @@
+import logging
 import os
 
 import boto3
 from great_expectations.data_context import BaseDataContext
 from great_expectations.data_context.types.base import DataContextConfig
+
+logging.getLogger().setLevel(logging.INFO)
 
 _S3_BUCKET = os.environ["S3_BUCKET"]
 _S3_FOLDER = os.environ["S3_FOLDER"]
@@ -78,11 +81,10 @@ def handler(event, context):
             "s3_data_connector": {
                 "class_name": "InferredAssetS3DataConnector",
                 "bucket": f"{_S3_BUCKET}",
-                "prefix": f"{_S3_FOLDER}/raw/germany",
+                "prefix": f"{_S3_FOLDER}/raw/germany/cases",
                 "default_regex": {
                     "group_names": ["data_asset_name"],
-                    "pattern": f"{_S3_FOLDER}/raw/germany/cases/"
-                    + r"(\d{{4}}-\d{{2}}-\d{{2}})\.parquet",
+                    "pattern": rf"{_S3_FOLDER}/raw/germany/cases/(\d{{4}}-\d{{2}}-\d{{2}})\.parquet",  # noqa
                 },
             },
         },
@@ -93,6 +95,8 @@ def handler(event, context):
     derived_data_asset_names = context.get_available_data_asset_names()[_DATASOURCE][
         "s3_data_connector"
     ]
+
+    logging.info(f"Derived data assets: {derived_data_asset_names}")
 
     for i in derived_data_asset_names:
         print(f"Validating data asset: {i}...")
@@ -118,7 +122,7 @@ def handler(event, context):
 
         results = context.run_checkpoint(checkpoint_name=_CHECKPOINT)
 
-        print(results)
+        logging.info(results)
 
         source_key = f"{_S3_BUCKET}/{_S3_FOLDER}/raw/germany/cases/{i}.parquet"
         s3_client = boto3.client("s3")
@@ -130,6 +134,7 @@ def handler(event, context):
                 source=source_key,
                 copy_key=f"{_S3_FOLDER}/{_S3_FOLDER_SUCCESS}/germany/cases/{i}.parquet",
             )
+            logging.info("Success.")
 
         else:
             move_file(
@@ -138,4 +143,4 @@ def handler(event, context):
                 source=source_key,
                 copy_key=f"{_S3_FOLDER}/{_S3_FOLDER_FAILURE}/germany/cases/{i}.parquet",
             )
-            raise Exception("Error: Data validation not successful")
+            raise Exception("Error: Data validation not successful.")
