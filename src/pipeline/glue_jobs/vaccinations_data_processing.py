@@ -39,6 +39,7 @@ read_schema = ",".join(
         "`meta.info` string",
         "`meta.lastUpdate` string",
         "`meta.lastCheckedForUpdate` string",
+        "api_call_ts_utc date",
     ]
 )
 
