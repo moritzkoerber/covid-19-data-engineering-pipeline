@@ -1,3 +1,3 @@
-pandas==1.4.2
-pyarrow==7.0.0
-great_expectations==0.14.13
+pandas==1.4.4
+pyarrow==9.0.0
+great_expectations~=0.14.13
