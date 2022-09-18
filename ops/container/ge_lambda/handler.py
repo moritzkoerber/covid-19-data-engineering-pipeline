@@ -29,7 +29,7 @@ def move_file(
         CopySource=source,
         Key=copy_key,
     )
-    s3_client.delete_object(Bucket=source_bucket, Key=delete_key)
+    s3_client.delete_object(Bucket=source_bucket, Key=copy_key)
 
 
 def handler(event, context):
