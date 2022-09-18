@@ -1,8 +1,11 @@
+import logging
 import os
 
 import boto3
 from great_expectations.data_context import BaseDataContext
 from great_expectations.data_context.types.base import DataContextConfig
+
+logging.getLogger().setLevel(logging.INFO)
 
 _S3_BUCKET = os.environ["S3_BUCKET"]
 _S3_FOLDER = os.environ["S3_FOLDER"]
@@ -10,6 +13,23 @@ _S3_FOLDER_SUCCESS = os.environ["S3_FOLDER_SUCCESS"]
 _S3_FOLDER_FAILURE = os.environ["S3_FOLDER_FAILURE"]
 _DATASOURCE = os.environ["DATASOURCE"]
 _CHECKPOINT = os.environ["CHECKPOINT"]
+
+
+def move_file(
+    s3_client,
+    source_bucket: str,
+    source: str,
+    copy_key: str,
+    delete_key: str = None,
+):
+    if delete_key is None:
+        delete_key = source
+    s3_client.copy_object(
+        Bucket=source_bucket,
+        CopySource=source,
+        Key=copy_key,
+    )
+    s3_client.delete_object(Bucket=source_bucket, Key=delete_key)
 
 
 def handler(event, context):
@@ -61,10 +81,10 @@ def handler(event, context):
             "s3_data_connector": {
                 "class_name": "InferredAssetS3DataConnector",
                 "bucket": f"{_S3_BUCKET}",
-                "prefix": f"{_S3_FOLDER}/raw/germany",
+                "prefix": f"{_S3_FOLDER}/raw/germany/cases",
                 "default_regex": {
                     "group_names": ["data_asset_name"],
-                    "pattern": rf"{_S3_FOLDER}/raw/germany/(\d{{4}}-\d{{2}}-\d{{2}})\.parquet",
+                    "pattern": rf"{_S3_FOLDER}/raw/germany/cases/(\d{{4}}-\d{{2}}-\d{{2}})\.parquet",  # noqa
                 },
             },
         },
@@ -76,19 +96,7 @@ def handler(event, context):
         "s3_data_connector"
     ]
 
-    s3_client = boto3.client("s3")
-
-    def move_file(
-        source_bucket: str, source: str, copy_key: str, delete_key: str = None
-    ):
-        if delete_key is None:
-            delete_key = source
-        s3_client.copy_object(
-            Bucket=source_bucket,
-            CopySource=source,
-            Key=copy_key,
-        )
-        s3_client.delete_object(Bucket=source_bucket, Key=delete_key)
+    logging.info(f"Derived data assets: {derived_data_asset_names}")
 
     for i in derived_data_asset_names:
         print(f"Validating data asset: {i}...")
@@ -114,20 +122,25 @@ def handler(event, context):
 
         results = context.run_checkpoint(checkpoint_name=_CHECKPOINT)
 
-        print(results)
-        source_key = f"{_S3_BUCKET}/{_S3_FOLDER}/raw/germany/{i}.parquet"
+        logging.info(results)
+
+        source_key = f"{_S3_BUCKET}/{_S3_FOLDER}/raw/germany/cases/{i}.parquet"
+        s3_client = boto3.client("s3")
 
         if results["success"]:
             move_file(
+                s3_client=s3_client,
                 source_bucket=_S3_BUCKET,
                 source=source_key,
-                copy_key=f"{_S3_FOLDER}/{_S3_FOLDER_SUCCESS}/germany/{i}.parquet",
+                copy_key=f"{_S3_FOLDER}/{_S3_FOLDER_SUCCESS}/germany/cases/{i}.parquet",
             )
+            logging.info("Success.")
 
         else:
             move_file(
+                s3_client=s3_client,
                 source_bucket=_S3_BUCKET,
                 source=source_key,
-                copy_key=f"{_S3_FOLDER}/{_S3_FOLDER_FAILURE}/germany/{i}.parquet",
+                copy_key=f"{_S3_FOLDER}/{_S3_FOLDER_FAILURE}/germany/cases/{i}.parquet",
             )
-            raise Exception("Error: Data validation not successful")
+            raise Exception("Error: Data validation not successful.")
