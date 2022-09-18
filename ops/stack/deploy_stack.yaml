@@ -55,6 +55,7 @@ Resources:
                   - cloudwatch:*
                   - logs:*
                   - states:*
+                  - cloudtrail:*
                 Resource: '*'
                 Condition:
                   StringEquals:
