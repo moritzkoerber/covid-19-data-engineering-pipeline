@@ -51,6 +51,31 @@ Resources:
             Condition:
               StringEquals:
                 AWS:SourceOwner: !Sub '${AWS::AccountId}'
+          - Sid: PublishEvents
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref SNSTopic
+
+  NotifyOnFailure:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: 'Alert when a lambda function fails'
+      EventPattern:
+        detail:
+          requestContext:
+            condition:
+              - RetriesExhausted
+      State: ENABLED
+      Targets:
+        - Arn: !Ref SNSTopic
+          Id: NotifyOnFailure
+          InputTransformer:
+            InputPathsMap:
+              functionArn: '$.detail.requestContext.functionArn'
+            InputTemplate: |
+              "Lambda function (<functionArn>) failed (async invocation)"
 
 Outputs:
   SNSTopic:
