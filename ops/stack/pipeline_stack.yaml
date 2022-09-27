@@ -184,7 +184,7 @@ Resources:
         Bucket: !Ref APIS3Bucket
         Key: !Sub 'scripts/csse_handler_${Version}.zip'
       EventInvokeConfig:
-        MaximumRetryAttempts: 2
+        MaximumRetryAttempts: 1
         DestinationConfig:
           OnFailure:
             Type: EventBridge
@@ -638,6 +638,13 @@ Resources:
       Targets:
         - Arn: !ImportValue CloudWatchAlarmSNSTopic
           Id: !Sub 'GlueDataProcessingJobFailed${Environment}'
+          InputTransformer:
+            InputPathsMap:
+              jobname: '$.detail.jobName'
+              state: '$.detail.state'
+              message: '$.detail.message'
+            InputTemplate: |
+              "Glue Job <jobname> failed, state: <state>, message: <message>"
 
   GlueCrawlerTrigger:
     Type: AWS::Glue::Trigger

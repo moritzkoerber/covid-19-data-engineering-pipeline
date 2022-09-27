@@ -13,6 +13,7 @@ Parameters:
 Resources:
   APILambdaRepository:
     Type: AWS::ECR::Repository
+    DeletionPolicy: Delete
     Properties:
       EncryptionConfiguration:
         EncryptionType: AES256
@@ -23,6 +24,7 @@ Resources:
 
   GELambdaRepository:
     Type: AWS::ECR::Repository
+    DeletionPolicy: Delete
     Properties:
       EncryptionConfiguration:
         EncryptionType: AES256
