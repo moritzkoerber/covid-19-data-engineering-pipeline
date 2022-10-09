@@ -11,7 +11,7 @@ pyspark = "*"
 awswrangler = "==2.17.0"
 pyarrow = "==8.0.0"
 pycountry = "*"
-apache-airflow = "==2.4.1"
+apache-airflow = "==2.4.3"
 great_expectations = "~=0.14.13"
 
 [dev-packages]
