@@ -1,7 +1,6 @@
 from datetime import datetime
 
 import boto3
-import pandas
 from airflow.models.dag import DAG
 from tasks import ingestion, processing
 
@@ -9,7 +8,7 @@ ENV = "staging"
 _bucket = f"s3://data-pipeline-s3-bucket-{ENV}"
 
 boto3_session = boto3.Session(profile_name="GenericUser")
-run_date = pandas.Timestamp.now().floor("D")
+# boto3.setup_default_session(profile_name="GenericUser")
 
 with DAG(
     dag_id=f"vaccinations-{ENV}",
@@ -19,12 +18,10 @@ with DAG(
 ) as dag:
     process_vacciations_task = processing.process_vaccinations(
         bucket=_bucket,
-        run_date=run_date,
         boto3_session=boto3_session,
     )
     ingest_vaccinations_task = ingestion.ingest_into_redshift(
         bucket=_bucket,
-        run_date=run_date,
         boto3_session=boto3_session,
     )
 
