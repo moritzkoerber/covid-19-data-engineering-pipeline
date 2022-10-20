@@ -18,18 +18,18 @@ _CHECKPOINT = os.environ["CHECKPOINT"]
 def move_file(
     s3_client,
     source_bucket: str,
-    source: str,
-    copy_key: str,
-    delete_key: str = None,
+    source_key: dict,
+    destination_key: str,
+    destination_bucket: str = None,
 ):
-    if delete_key is None:
-        delete_key = source
+    destination_bucket = destination_bucket or source_bucket
+
     s3_client.copy_object(
-        Bucket=source_bucket,
-        CopySource=source,
-        Key=copy_key,
+        Bucket=destination_bucket,
+        CopySource=f"{source_bucket}/{source_key}",
+        Key=destination_key,
     )
-    s3_client.delete_object(Bucket=source_bucket, Key=copy_key)
+    s3_client.delete_object(Bucket=source_bucket, Key=source_key)
 
 
 def handler(event, context):
@@ -124,15 +124,15 @@ def handler(event, context):
 
         logging.info(results)
 
-        source_key = f"{_S3_BUCKET}/{_S3_FOLDER}/raw/germany/cases/{i}.parquet"
+        source_key = f"{_S3_FOLDER}/raw/germany/cases/{i}.parquet"
         s3_client = boto3.client("s3")
 
         if results["success"]:
             move_file(
                 s3_client=s3_client,
                 source_bucket=_S3_BUCKET,
-                source=source_key,
-                copy_key=f"{_S3_FOLDER}/{_S3_FOLDER_SUCCESS}/germany/cases/{i}.parquet",
+                source_key=source_key,
+                destination_key=f"{_S3_FOLDER}/{_S3_FOLDER_SUCCESS}/germany/cases/{i}.parquet",
             )
             logging.info("Success.")
 
@@ -140,7 +140,7 @@ def handler(event, context):
             move_file(
                 s3_client=s3_client,
                 source_bucket=_S3_BUCKET,
-                source=source_key,
-                copy_key=f"{_S3_FOLDER}/{_S3_FOLDER_FAILURE}/germany/cases/{i}.parquet",
+                source_key=source_key,
+                destination_key=f"{_S3_FOLDER}/{_S3_FOLDER_FAILURE}/germany/cases/{i}.parquet",
             )
             raise Exception("Error: Data validation not successful.")
