@@ -97,7 +97,7 @@ def handler(event, context):
     ]
 
     logging.info(f"Derived data assets: {derived_data_asset_names}")
-
+    errors = []
     for i in derived_data_asset_names:
         print(f"Validating data asset: {i}...")
         checkpoint_dict = {
@@ -143,4 +143,8 @@ def handler(event, context):
                 source_key=source_key,
                 destination_key=f"{_S3_FOLDER}/{_S3_FOLDER_FAILURE}/germany/cases/{i}.parquet",
             )
-            raise Exception("Error: Data validation not successful.")
+            errors.append(i)
+
+    if errors:
+        logging.error(f"Errors occurred in {', '.join(errors)}")
+        raise Exception("Error: Data validation not successful.")
