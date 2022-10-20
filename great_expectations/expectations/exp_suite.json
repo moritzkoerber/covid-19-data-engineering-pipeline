@@ -15,6 +15,7 @@
           "delta.cases",
           "delta.deaths",
           "delta.recovered",
+          "delta.weekIncidence",
           "r.value",
           "r.rValue4Days.value",
           "r.rValue4Days.date",
