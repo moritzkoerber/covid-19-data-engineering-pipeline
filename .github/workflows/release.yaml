@@ -5,7 +5,7 @@ on:
   workflow_dispatch: {}
 
 env:
-  PYTHON_VERSION: 3.8.2
+  PYTHON_VERSION: '3.9'
   PIPENV_VENV_IN_PROJECT: '1'
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
