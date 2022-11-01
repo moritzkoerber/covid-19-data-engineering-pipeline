@@ -44,7 +44,6 @@ export class RedshiftStack extends Stack {
 
     const table = new Table(this, "Table", {
       tableColumns: [
-        { name: "date", dataType: "varchar" },
         { name: "administeredvaccinations", dataType: "BIGINT" },
         { name: "vaccinated", dataType: "BIGINT" },
         { name: "vaccination_biontech", dataType: "BIGINT" },
