@@ -21,7 +21,7 @@ on:
 concurrency: ${{ github.event.inputs.environment }}
 
 env:
-  PYTHON_VERSION: 3.9.13
+  PYTHON_VERSION: '3.9'
   PIPENV_VENV_IN_PROJECT: '1'
 
 jobs:
@@ -33,7 +33,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Get AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -72,7 +72,7 @@ jobs:
         lambda_name: ['api_lambda', 'ge_lambda']
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Get AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -94,6 +94,8 @@ jobs:
           context: ops/container/${{ matrix.lambda_name }}
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/${{ matrix.lambda_name }}-${{ github.event.inputs.environment }}:${{ github.event.inputs.docker_version_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   deploy_stack:
     name: Deploy stack
@@ -109,7 +111,7 @@ jobs:
             stack-file: ops/stack/pipeline_stack.yaml
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Get AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -124,6 +126,7 @@ jobs:
           name: ${{ matrix.stack-name }}-${{ github.event.inputs.environment }}
           template: ${{ matrix.stack-file }}
           no-fail-on-empty-changeset: '1'
+          termination-protection: '1'
           capabilities: CAPABILITY_NAMED_IAM
           parameter-overrides: >-
             Environment=${{ github.event.inputs.environment }},
