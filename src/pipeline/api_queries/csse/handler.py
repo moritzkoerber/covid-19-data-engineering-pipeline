@@ -1,4 +1,5 @@
 import io
+import logging
 import os
 import re
 
@@ -24,6 +25,7 @@ data_types = [regex_pattern.search(file_name)[1] for file_name in file_names]
 
 def handler(event, context):
     for file_name, data_type in zip(file_names, data_types):
+        logging.info(f"Parsing {file_name}")
         file = requests.get(f"{_REPOSITORY_PATH}/{file_name}")
         file_obj = io.StringIO(file.text)
 

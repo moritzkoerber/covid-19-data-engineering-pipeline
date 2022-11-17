@@ -307,15 +307,13 @@ Resources:
     Type: AWS::Serverless::LayerVersion
     Properties:
       RetentionPolicy: Delete
-      CompatibleArchitectures:
-        - x86_64
+      CompatibleRuntimes:
+        - python3.9
       LayerName: !Sub 'data-pipeline-csse-lambda-layer-${Version}'
       Description: !Sub 'CSSE Lambda ${Version}'
       ContentUri:
         Bucket: !ImportValue LambdaLayerS3Bucket
         Key: !Sub 'data-pipeline/csse/lambda_layer_${Version}.zip'
-      CompatibleRuntimes:
-        - python3.9
 
   GELambda:
     Type: AWS::Lambda::Function
