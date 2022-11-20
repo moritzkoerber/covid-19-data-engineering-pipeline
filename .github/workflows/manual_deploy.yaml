@@ -4,21 +4,20 @@ name: Manual Deployment
 on:
   workflow_dispatch:
     inputs:
-      docker_version_tag:
+      version:
         description: 'For example "v2"'
-        required: false
-      stack_version:
-        description: 'For example "v2"'
-        required: false
+        required: true
       environment:
         type: choice
         options:
           - staging
           - production
         description: Deploy environment; staging or production
-        required: false
+        required: true
 
 concurrency: ${{ github.event.inputs.environment }}
+
+run-name: Deploy ${{ github.event.inputs.version }} to ${{ github.event.inputs.environment }}
 
 env:
   PYTHON_VERSION: '3.9'
@@ -43,22 +42,27 @@ jobs:
 
       - name: upload handler
         run: |
-          zip -j csse_handler_${{ github.event.inputs.stack_version }}.zip src/pipeline/api_queries/csse/handler.py
-          aws s3 cp csse_handler_${{ github.event.inputs.stack_version }}.zip s3://data-pipeline-s3-bucket-${{ github.event.inputs.environment }}/scripts/csse_handler_${{ github.event.inputs.stack_version }}.zip
+          zip -j csse_handler_${{ github.event.inputs.version }}.zip src/pipeline/api_queries/csse/handler.py
+          aws s3 cp csse_handler_${{ github.event.inputs.version }}.zip s3://data-pipeline-s3-bucket-${{ github.event.inputs.environment }}/scripts/csse_handler_${{ github.event.inputs.version }}.zip
 
-      - name: Build lambda layer
-        run: |
-          pip install -r ops/layers/csse/requirements.txt --target lambda_layer/python
-          pushd lambda_layer
-          zip -r ../lambda_layer_${{ github.event.inputs.stack_version }}.zip . \
-          -x '*/boto3/*' \
-          -x '*/botocore/*' \
-          -x '*__pycache__*'
-          popd
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-      - name: Push lambda layer
-        run: |
-          aws s3 cp lambda_layer_${{ github.event.inputs.stack_version }}.zip s3://data-pipeline-lambda-layers/data-pipeline/csse/lambda_layer_${{ github.event.inputs.stack_version }}.zip
+      - name: build and push lambda layer
+        uses: docker/build-push-action@v3
+        with:
+          context: ops/layers/csse/
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VERSION=${{ github.event.inputs.version }}
+            ENV=${{ github.event.inputs.environment }}
+          secrets: |
+            "AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }}"
+            "AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }}"
+            "AWS_REGION=${{ env.AWS_REGION }}"
+            "AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }}"
 
   build_and_push_docker_containers:
     name: Build and push docker containers
@@ -89,11 +93,10 @@ jobs:
 
       - name: Build and push docker container
         uses: docker/build-push-action@v3
-        if: contains(github.event.inputs.docker_version_tag, 'v')
         with:
           context: ops/container/${{ matrix.lambda_name }}
           push: true
-          tags: ${{ steps.login-ecr.outputs.registry }}/${{ matrix.lambda_name }}-${{ github.event.inputs.environment }}:${{ github.event.inputs.docker_version_tag }}
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ matrix.lambda_name }}-${{ github.event.inputs.environment }}:${{ github.event.inputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -120,7 +123,6 @@ jobs:
           aws-region: eu-central-1
 
       - name: Deploy stacks
-        if: contains(github.event.inputs.stack_version, 'v')
         uses: aws-actions/aws-cloudformation-github-deploy@v1
         with:
           name: ${{ matrix.stack-name }}-${{ github.event.inputs.environment }}
@@ -130,4 +132,4 @@ jobs:
           capabilities: CAPABILITY_NAMED_IAM
           parameter-overrides: >-
             Environment=${{ github.event.inputs.environment }},
-            Version=${{ github.event.inputs.stack_version }}
+            Version=${{ github.event.inputs.version }}
