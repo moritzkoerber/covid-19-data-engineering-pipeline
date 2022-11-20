@@ -309,11 +309,11 @@ Resources:
       RetentionPolicy: Delete
       CompatibleRuntimes:
         - python3.9
-      LayerName: !Sub 'data-pipeline-csse-lambda-layer-${Version}'
-      Description: !Sub 'CSSE Lambda ${Version}'
+      LayerName: !Sub 'data-pipeline-csse-lambda-layer-${Environment}-${Version}'
+      Description: !Sub 'CSSE Lambda ${Version} (${Environment})'
       ContentUri:
         Bucket: !ImportValue LambdaLayerS3Bucket
-        Key: !Sub 'data-pipeline/csse/lambda_layer_${Version}.zip'
+        Key: !Sub 'data-pipeline/${Environment}/csse/lambda_layer_${Environment}_${Version}.zip'
 
   GELambda:
     Type: AWS::Lambda::Function
