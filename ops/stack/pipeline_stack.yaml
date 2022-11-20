@@ -408,8 +408,8 @@ Resources:
                   - glue:BatchCreatePartition
                 Resource:
                   - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog'
-                  - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/api_data_${Environment}'
-                  - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/api_data_${Environment}/*'
+                  - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/*'
+                  - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/*'
         - PolicyName: EventBridgeAccess
           PolicyDocument:
             Version: '2012-10-17'
