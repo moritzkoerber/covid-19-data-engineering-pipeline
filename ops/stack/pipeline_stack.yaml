@@ -188,7 +188,7 @@ Resources:
         DestinationConfig:
           OnFailure:
             Type: EventBridge
-            Destination: !Sub 'arn:aws:events:${AWS::Region}:${AWS::AccountId}:event-bus/default'
+            Destination: !Sub 'arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:event-bus/default'
       Runtime: python3.9
       Description: Lambda for CSSE api calls
       Timeout: 300
@@ -384,8 +384,8 @@ Resources:
                   - ecr:BatchGetImage
                   - ecr:GetDownloadUrlForLayer
                 Resource:
-                  - !Sub 'arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/api_lambda-${Environment}'
-                  - !Sub 'arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/ge_lambda-${Environment}'
+                  - !Sub 'arn:${AWS::Partition}:ecr:${AWS::Region}:${AWS::AccountId}:repository/api_lambda-${Environment}'
+                  - !Sub 'arn:${AWS::Partition}:ecr:${AWS::Region}:${AWS::AccountId}:repository/ge_lambda-${Environment}'
         - PolicyName: S3Access
           PolicyDocument:
             Version: '2012-10-17'
@@ -394,8 +394,8 @@ Resources:
                 Action:
                   - s3:*
                 Resource:
-                  - !Sub 'arn:aws:s3:::data-pipeline-s3-bucket-${Environment}'
-                  - !Sub 'arn:aws:s3:::data-pipeline-s3-bucket-${Environment}/*'
+                  - !Sub 'arn:${AWS::Partition}:s3:::data-pipeline-s3-bucket-${Environment}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::data-pipeline-s3-bucket-${Environment}/*'
         - PolicyName: GlueAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -407,9 +407,9 @@ Resources:
                   - glue:UpdateTable
                   - glue:BatchCreatePartition
                 Resource:
-                  - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog'
-                  - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/*'
-                  - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/*'
+                  - !Sub 'arn:${AWS::Partition}:glue:${AWS::Region}:${AWS::AccountId}:catalog'
+                  - !Sub 'arn:${AWS::Partition}:glue:${AWS::Region}:${AWS::AccountId}:database/*'
+                  - !Sub 'arn:${AWS::Partition}:glue:${AWS::Region}:${AWS::AccountId}:table/*'
         - PolicyName: EventBridgeAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -469,7 +469,7 @@ Resources:
       FunctionName: !Ref GELambda
       Principal: s3.amazonaws.com
       SourceAccount: !Ref AWS::AccountId
-      SourceArn: !Sub 'arn:aws:s3:::data-pipeline-s3-bucket-${Environment}'
+      SourceArn: !Sub 'arn:${AWS::Partition}:s3:::data-pipeline-s3-bucket-${Environment}'
 
   APIGlueProcessingWorkflow:
     Type: AWS::Glue::Workflow
@@ -526,10 +526,10 @@ Resources:
                   - s3:PutObject
                   - s3:Delete*
                 Resource:
-                  - !Sub 'arn:aws:s3:::data-pipeline-s3-bucket-${Environment}'
-                  - !Sub 'arn:aws:s3:::data-pipeline-s3-bucket-${Environment}/*'
+                  - !Sub 'arn:${AWS::Partition}:s3:::data-pipeline-s3-bucket-${Environment}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::data-pipeline-s3-bucket-${Environment}/*'
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSGlueServiceRole'
 
   GlueJobTrigger:
     Type: AWS::Glue::Trigger
@@ -556,7 +556,7 @@ Resources:
         - DataResources:
             - Type: AWS::S3::Object
               Values:
-                - !Sub 'arn:aws:s3:::${APIS3Bucket}/data/rki/valid/germany/cases'
+                - !Sub 'arn:${AWS::Partition}:s3:::${APIS3Bucket}/data/rki/valid/germany/cases'
           IncludeManagementEvents: false
           ReadWriteType: WriteOnly
       Tags:
@@ -591,7 +591,7 @@ Resources:
               - prefix: data/rki/valid/germany/cases
       State: ENABLED
       Targets:
-        - Arn: !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:workflow/${APIGlueProcessingWorkflow}'
+        - Arn: !Sub 'arn:${AWS::Partition}:glue:${AWS::Region}:${AWS::AccountId}:workflow/${APIGlueProcessingWorkflow}'
           RoleArn: !GetAtt GlueJobEventRuleRole.Arn
           Id: !Sub 'CloudtrailWorkflowTrigger${Environment}'
 
@@ -614,7 +614,7 @@ Resources:
                 Action:
                   - glue:notifyEvent
                 Resource:
-                  - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:workflow/${APIGlueProcessingWorkflow}'
+                  - !Sub 'arn:${AWS::Partition}:glue:${AWS::Region}:${AWS::AccountId}:workflow/${APIGlueProcessingWorkflow}'
 
   GlueJobEventFailureNotification:
     Type: AWS::Events::Rule
