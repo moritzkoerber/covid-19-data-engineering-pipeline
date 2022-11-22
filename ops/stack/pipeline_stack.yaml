@@ -204,6 +204,7 @@ Resources:
           REPOSITORY_PATH: 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series'
           ENVIRONMENT: !Ref Environment
           S3_BUCKET: !Sub 's3://${APIS3Bucket}'
+          DATABASE: !Ref APIGlueDatabase
 
   LambdasStateMachine:
     Type: AWS::StepFunctions::StateMachine
