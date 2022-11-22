@@ -10,7 +10,7 @@ import requests
 _S3_BUCKET = os.environ["S3_BUCKET"]
 _REPOSITORY_PATH = os.environ["REPOSITORY_PATH"]
 _ENVIRONMENT = os.environ["ENVIRONMENT"]
-
+_DATABASE = os.environ["DATABASE"]
 
 # countries = [e.name for e in list(pycountry.countries)]
 file_names = [
@@ -46,7 +46,7 @@ def handler(event, context):
             pandas_df,
             f"{_S3_BUCKET}/data/csse/{data_type}/global/",
             schema_evolution=False,
-            database=f"csse_{_ENVIRONMENT}",
+            database=_DATABASE,
             table=f"{data_type}_global",
             mode="overwrite_partitions",
             sanitize_columns=True,
