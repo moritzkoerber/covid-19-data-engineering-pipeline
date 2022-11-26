@@ -486,7 +486,7 @@ Resources:
     Properties:
       Command:
         Name: glueetl
-        ScriptLocation: !Sub 's3://${APIS3Bucket}/scripts/glue/vaccinations_data_processing.py'
+        ScriptLocation: !Sub 's3://${APIS3Bucket}/scripts/glue/cases_data_processing.py'
       GlueVersion: '3.0'
       DefaultArguments:
         --bucket: !Ref APIS3Bucket
