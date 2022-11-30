@@ -182,7 +182,7 @@ Resources:
       Handler: handler.handler
       CodeUri:
         Bucket: !Ref APIS3Bucket
-        Key: !Sub 'scripts/csse_handler_${Version}.zip'
+        Key: !Sub 'scripts/${Version}/api_queries/CSSE/csse_handler.zip'
       EventInvokeConfig:
         MaximumRetryAttempts: 1
         DestinationConfig:
@@ -486,8 +486,8 @@ Resources:
     Properties:
       Command:
         Name: glueetl
-        ScriptLocation: !Sub 's3://${APIS3Bucket}/scripts/glue/cases_data_processing.py'
-      GlueVersion: '3.0'
+        ScriptLocation: !Sub 's3://${APIS3Bucket}/scripts/${Version}/glue_jobs/cases_data_processing.py'
+      GlueVersion: '4.0'
       DefaultArguments:
         --bucket: !Ref APIS3Bucket
         --prefix: data/rki/valid/germany/cases
@@ -531,20 +531,6 @@ Resources:
                   - !Sub 'arn:${AWS::Partition}:s3:::data-pipeline-s3-bucket-${Environment}/*'
       ManagedPolicyArns:
         - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSGlueServiceRole'
-
-  GlueJobTrigger:
-    Type: AWS::Glue::Trigger
-    Properties:
-      Name: !Sub 'data-processing-glue-job-trigger-${Environment}'
-      WorkflowName: !Ref APIGlueProcessingWorkflow
-      Description: !Sub 'Triggers ${GlueDataProcessingJob} in ${Environment}'
-      Actions:
-        - JobName: !Ref GlueDataProcessingJob
-      Type: EVENT
-      Tags:
-        Stack: !Ref AWS::StackName
-        Environment: !Ref Environment
-        Name: ApiPipeline
 
   APIS3BucketCloudTrail:
     Type: AWS::CloudTrail::Trail
