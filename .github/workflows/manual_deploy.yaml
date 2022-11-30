@@ -42,8 +42,15 @@ jobs:
 
       - name: upload handler
         run: |
-          zip -j csse_handler_${{ github.event.inputs.version }}.zip src/pipeline/api_queries/csse/handler.py
-          aws s3 cp csse_handler_${{ github.event.inputs.version }}.zip s3://data-pipeline-s3-bucket-${{ github.event.inputs.environment }}/scripts/csse_handler_${{ github.event.inputs.version }}.zip
+          zip -j csse_handler.zip src/pipeline/api_queries/csse/handler.py
+          aws s3 cp csse_handler.zip \
+            s3://data-pipeline-s3-bucket-${{ github.event.inputs.environment }}/scripts/\
+            ${{ github.event.inputs.version }}/api_queries/CSSE/csse_handler.zip
+
+      - name: upload glue jobs
+        run: |
+          aws s3 sync src/glue_jobs s3://data-pipeline-s3-bucket-${{ github.event.inputs.environment }}/scripts/\
+            ${{ github.event.inputs.version }}/glue_jobs/
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
