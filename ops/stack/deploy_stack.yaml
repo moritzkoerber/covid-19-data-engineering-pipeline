@@ -37,8 +37,10 @@ Resources:
                 Resource:
                   - 'arn:aws:s3:::data-pipeline-lambda-layers'
                   - 'arn:aws:s3:::data-pipeline-lambda-layers/*'
-                  - 'arn:aws:s3:::data-pipeline-s3-bucket-staging/scripts/*'
-                  - 'arn:aws:s3:::data-pipeline-s3-bucket-production/scripts/*'
+                  - 'arn:aws:s3:::data-pipeline-s3-bucket-staging'
+                  - 'arn:aws:s3:::data-pipeline-s3-bucket-staging/*'
+                  - 'arn:aws:s3:::data-pipeline-s3-bucket-production'
+                  - 'arn:aws:s3:::data-pipeline-s3-bucket-production/*'
               - Effect: Allow
                 Action:
                   - cloudformation:*
