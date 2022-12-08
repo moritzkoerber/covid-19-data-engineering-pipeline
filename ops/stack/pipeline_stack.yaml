@@ -532,6 +532,20 @@ Resources:
       ManagedPolicyArns:
         - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSGlueServiceRole'
 
+  GlueJobTrigger:
+    Type: AWS::Glue::Trigger
+    Properties:
+      Name: !Sub 'data-processing-glue-job-trigger-${Environment}'
+      WorkflowName: !Ref APIGlueProcessingWorkflow
+      Description: !Sub 'Triggers ${GlueDataProcessingJob} in ${Environment}'
+      Actions:
+        - JobName: !Ref GlueDataProcessingJob
+      Type: EVENT
+      Tags:
+        Stack: !Ref AWS::StackName
+        Environment: !Ref Environment
+        Name: ApiPipeline
+
   APIS3BucketCloudTrail:
     Type: AWS::CloudTrail::Trail
     Properties:
