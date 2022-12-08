@@ -44,8 +44,7 @@ jobs:
         run: |
           zip -j csse_handler.zip src/api_queries/CSSE/handler.py
           aws s3 cp csse_handler.zip \
-            s3://data-pipeline-s3-bucket-${{ github.event.inputs.environment }}/scripts/\
-            ${{ github.event.inputs.version }}/api_queries/CSSE/csse_handler.zip
+            s3://data-pipeline-s3-bucket-${{ github.event.inputs.environment }}/scripts/${{ github.event.inputs.version }}/api_queries/CSSE/csse_handler.zip
 
       - name: upload glue jobs
         run: |
