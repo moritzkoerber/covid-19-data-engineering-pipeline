@@ -28,6 +28,7 @@ data_schema = StructType(
         StructField("weekIncidence", DoubleType(), True),
         StructField("casesPer100k", DoubleType(), True),
         StructField("casesPerWeek", LongType(), True),
+        StructField("deathsPerWeek", LongType(), True),
         StructField("delta.cases", LongType(), True),
         StructField("delta.deaths", LongType(), True),
         StructField("delta.recovered", LongType(), True),
@@ -54,6 +55,7 @@ data_schema = StructType(
 sdf = sc.read.option("mergeSchema", "true").parquet(f"s3://{_BUCKET}/{_PREFIX}")
 
 if sdf.schema != data_schema:
+    sdf.printSchema()
     raise AssertionError("Error: Schema not valid.")
 
 destination_sdf = sc.read.parquet(f"s3://{_BUCKET}/{_WRITE_LOCATION}")
