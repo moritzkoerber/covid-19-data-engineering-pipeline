@@ -12,6 +12,7 @@
           "weekIncidence",
           "casesPer100k",
           "casesPerWeek",
+          "deathsPerWeek",
           "delta.cases",
           "delta.deaths",
           "delta.recovered",
