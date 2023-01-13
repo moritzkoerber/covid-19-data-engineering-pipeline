@@ -1,5 +1,3 @@
 [tool.isort]
-multi_line_output = 3
-line_length = 88
-include_trailing_comma = true
+profile = "black"
 known_third_party = ["awsglue", "boto3", "pandas", "pyspark", "requests", "great_expectations"]

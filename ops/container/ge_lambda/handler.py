@@ -18,7 +18,7 @@ _CHECKPOINT = os.environ["CHECKPOINT"]
 def move_file(
     s3_client,
     source_bucket: str,
-    source_key: dict,
+    source_key: str,
     destination_key: str,
     destination_bucket: str = None,
 ):
