@@ -12,35 +12,18 @@ repos:
           - --unsafe
 
   - repo: https://github.com/psf/black
-    rev: 22.12.0
+    rev: 23.1.0
     hooks:
       - id: black
 
-  - repo: https://github.com/pycqa/isort
-    rev: 5.11.4
-    hooks:
-      - id: isort
-
-  - repo: https://github.com/pycqa/autoflake
-    rev: v2.0.0
-    hooks:
-      - id: autoflake
-        args: [--in-place, --remove-all-unused-imports, --remove-unused-variable]
-
-  - repo: https://github.com/pycqa/flake8
-    rev: 6.0.0
-    hooks:
-      - id: flake8
-        additional_dependencies: [flake8-bugbear, pep8-naming, flake8-picky-parentheses, flake8-builtins, flake8-simplify, pandas-vet]
-
   - repo: https://github.com/aws-cloudformation/cfn-lint
-    rev: v0.72.8
+    rev: v0.73.2
     hooks:
       - id: cfn-python-lint
         files: ops/stack/.*.yaml$
 
   - repo: https://github.com/sirosen/check-jsonschema
-    rev: 0.20.0
+    rev: 0.21.0
     hooks:
       - id: check-github-workflows
       - id: check-github-actions
@@ -61,3 +44,9 @@ repos:
     hooks:
       - id: prettier
         types_or: [javascript]
+
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: 'v0.0.253'
+    hooks:
+      - id: ruff
+        args: [--fix]

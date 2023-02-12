@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import boto3
 from airflow.models.dag import DAG
@@ -13,7 +13,7 @@ with DAG(
     dag_id=f"vaccinations-{ENV}",
     schedule_interval="0 9 * * *",
     catchup=False,
-    start_date=datetime(2022, 12, 17),
+    start_date=datetime(2022, 12, 17, tzinfo=timezone.utc),
 ) as dag:
     process_vacciations_task = processing.process_vaccinations(
         bucket=_bucket,

@@ -6,6 +6,7 @@ import re
 import awswrangler as awr
 import pandas as pd
 import requests
+from awslambdaric.lambda_context import LambdaContext
 
 _S3_BUCKET = os.environ["S3_BUCKET"]
 _REPOSITORY_PATH = os.environ["REPOSITORY_PATH"]
@@ -19,11 +20,11 @@ file_names = [
     "time_series_covid19_recovered_global.csv",
 ]
 
-regex_pattern = re.compile(r"(?:covid19_)(\w+)(?:_global)")
+regex_pattern = re.compile(r":covid19_(\w+)_global")
 data_types = [regex_pattern.search(file_name)[1] for file_name in file_names]
 
 
-def handler(event, context):
+def handler(event: dict, context: LambdaContext):
     for file_name, data_type in zip(file_names, data_types):
         logging.info(f"Parsing {file_name}")
         file = requests.get(f"{_REPOSITORY_PATH}/{file_name}")

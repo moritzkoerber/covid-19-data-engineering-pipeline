@@ -3,13 +3,14 @@ import time
 
 import awswrangler as awr
 from airflow.decorators import task
+from boto3.session import Session
 from tasks.schemas import vaccinations_parquet_schema
 
 
 @task(
     task_id="ingest_vaccinations",
 )
-def ingest_into_redshift(bucket: str, boto3_session):
+def ingest_into_redshift(bucket: str, boto3_session: Session):
     redshift_client = boto3_session.client("redshift-data")
 
     aws_account_id = boto3_session.client("sts").get_caller_identity()["Account"]
