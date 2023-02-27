@@ -1,3 +1,21 @@
-[tool.isort]
-profile = "black"
-known_third_party = ["awsglue", "boto3", "pandas", "pyspark", "requests", "great_expectations"]
+[tool.ruff]
+
+select = [
+    "E", # pycodestyle
+    "F", # Pyflakes
+    "W", # pycodestyle
+    "I", # isort
+    "N", # pep8-naming
+    "ANN", # function annotations
+    "B", # bugbear
+    "A", # built-ins
+    "DTZ", # flake8-datetimez
+]
+
+target-version = "py39"
+
+[tool.ruff.isort]
+known-third-party = ["great_expectations"]
+
+[tool.ruff.flake8-annotations]
+suppress-none-returning = true

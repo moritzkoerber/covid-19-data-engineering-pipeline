@@ -2,6 +2,8 @@ import logging
 import os
 
 import boto3
+import botocore
+from awslambdaric.lambda_context import LambdaContext
 from great_expectations.data_context import BaseDataContext
 from great_expectations.data_context.types.base import DataContextConfig
 
@@ -16,7 +18,7 @@ _CHECKPOINT = os.environ["CHECKPOINT"]
 
 
 def move_file(
-    s3_client,
+    s3_client: botocore.client.S3,
     source_bucket: str,
     source_key: str,
     destination_key: str,
@@ -32,7 +34,7 @@ def move_file(
     s3_client.delete_object(Bucket=source_bucket, Key=source_key)
 
 
-def handler(event, context):
+def handler(event: dict, context: LambdaContext):
     context_cfg = {
         "stores": {
             "expectations_s3_store": {

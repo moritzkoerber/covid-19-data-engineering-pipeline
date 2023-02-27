@@ -3,6 +3,7 @@ import logging
 import awswrangler as awr
 import pyarrow as pa
 from airflow.decorators import task
+from boto3.session import Session
 from tasks.schemas import vaccinations_parquet_schema
 
 
@@ -11,7 +12,7 @@ from tasks.schemas import vaccinations_parquet_schema
 )
 def process_vaccinations(
     bucket: str,
-    boto3_session,
+    boto3_session: Session,
 ):
     for o in awr.s3.list_objects(
         f"{bucket}/data/rki/raw/germany/vaccinations/",
