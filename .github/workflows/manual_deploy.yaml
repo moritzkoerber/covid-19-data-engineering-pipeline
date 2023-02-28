@@ -21,7 +21,6 @@ run-name: Deploy ${{ github.event.inputs.version }} to ${{ github.event.inputs.e
 
 env:
   PYTHON_VERSION: '3.9'
-  PIPENV_VENV_IN_PROJECT: '1'
 
 jobs:
   build_and_push_lambda_layers:
@@ -54,7 +53,7 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - name: build and push lambda layer
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           context: ops/layers/csse/
           push: false

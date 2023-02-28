@@ -9,7 +9,6 @@ on:
 
 env:
   PYTHON_VERSION: '3.9'
-  PIPENV_VENV_IN_PROJECT: '1'
 
 jobs:
   linting:
