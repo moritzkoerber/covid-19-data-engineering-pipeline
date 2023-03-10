@@ -15,7 +15,7 @@ with DAG(
     catchup=False,
     start_date=datetime(2022, 12, 17, tzinfo=timezone.utc),
 ) as dag:
-    process_vacciations_task = processing.process_vaccinations(
+    process_vaccinations_task = processing.process_vaccinations(
         bucket=_bucket,
         boto3_session=boto3_session,
     )
@@ -24,4 +24,4 @@ with DAG(
         boto3_session=boto3_session,
     )
 
-process_vacciations_task >> ingest_vaccinations_task
+process_vaccinations_task >> ingest_vaccinations_task
