@@ -15,7 +15,7 @@ _NOW = pd.Timestamp.utcnow()
 def handler(event: dict, context: LambdaContext):
     # cases
     logger.info("Querying cases...")
-    response = requests.get(f"{_API_URL}/germany")
+    response = requests.get(f"{_API_URL}/germany", timeout=180)
     df = pd.json_normalize(response.json())
 
     date = f"{pd.to_datetime(df['meta.lastUpdate'][0]):%Y-%m-%d}"
@@ -28,7 +28,7 @@ def handler(event: dict, context: LambdaContext):
 
     # vaccinations
     logger.info("Querying vaccinations...")
-    response = requests.get(f"{_API_URL}/vaccinations")
+    response = requests.get(f"{_API_URL}/vaccinations", timeout=180)
     df = pd.json_normalize(response.json())
 
     date = f"{pd.to_datetime(df['meta.lastUpdate'][0]):%Y-%m-%d}"

@@ -25,7 +25,7 @@ data_types = [regex_pattern.search(file_name)[1] for file_name in file_names]
 def handler(event: dict, context: LambdaContext):
     for file_name, data_type in zip(file_names, data_types):
         logging.info(f"Parsing {file_name}")
-        retrieved_file = requests.get(f"{_REPOSITORY_PATH}/{file_name}")
+        retrieved_file = requests.get(f"{_REPOSITORY_PATH}/{file_name}", timeout=180)
         file_obj = io.StringIO(retrieved_file.text)
 
         pandas_df = (
