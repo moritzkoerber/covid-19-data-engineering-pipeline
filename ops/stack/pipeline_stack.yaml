@@ -202,7 +202,6 @@ Resources:
       Environment:
         Variables:
           REPOSITORY_PATH: 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series'
-          ENVIRONMENT: !Ref Environment
           S3_BUCKET: !Sub 's3://${APIS3Bucket}'
           DATABASE: !Ref APIGlueDatabase
 
@@ -431,7 +430,7 @@ Resources:
         - Arn: !GetAtt LambdasStateMachine.Arn
           Id: !Sub 'APILambda-state-machine-${Environment}'
           RoleArn: !GetAtt DailyAPIStateMachineTriggerRole.Arn
-      State: ENABLED
+      State: DISABLED
 
   DailyAPIStateMachineTriggerRole:
     Type: AWS::IAM::Role
@@ -590,7 +589,7 @@ Resources:
               - !Ref APIS3Bucket
             key:
               - prefix: data/rki/valid/germany/cases
-      State: ENABLED
+      State: DISABLED
       Targets:
         - Arn: !Sub 'arn:${AWS::Partition}:glue:${AWS::Region}:${AWS::AccountId}:workflow/${APIGlueProcessingWorkflow}'
           RoleArn: !GetAtt GlueJobEventRuleRole.Arn
@@ -633,7 +632,7 @@ Resources:
           state:
             - FAILED
             - TIMEOUT
-      State: ENABLED
+      State: DISABLED
       Targets:
         - Arn: !ImportValue CloudWatchAlarmSNSTopic
           Id: !Sub 'GlueDataProcessingJobFailed${Environment}'
