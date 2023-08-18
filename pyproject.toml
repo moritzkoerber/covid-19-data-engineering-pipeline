@@ -12,6 +12,9 @@ select = [
 ]
 
 target-version = "py39"
+fix = true
+show-fixes = true
+src = ["src"]
 
 [tool.ruff.isort]
 known-third-party = ["great_expectations"]
